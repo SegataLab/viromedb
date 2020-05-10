@@ -139,7 +139,7 @@ def scatter_knowness(myContigs):
 
 
 	l2 = l1[l1['contig_len'] >= 1000]
-	l2['eCircoLFC'] = map(discreteCirc,l2['circLog2FoldChange'])
+	l2['eCircoLFC'] = 0	#map(discreteCirc,l2['circLog2FoldChange'])
 	pd.pivot_table(l2,values='sample',index='eDatasetName',columns='eCircoLFC',aggfunc='count').to_csv('counts_circo.csv',sep='\t')
 
 
@@ -184,23 +184,22 @@ def scatter_knowness(myContigs):
 
 
 contigFolder="/shares/CIBIO-Storage/CM/scratch/users/moreno.zolfo/virome_data/high_enrichment/contigs_tg/original/";
-prokkaFolder="/shares/CIBIO-Storage/CM/scratch/users/moreno.zolfo/virome_data/contigs_trimgal/";
 prokkaFolder="/shares/CIBIO-Storage/CM/scratch/users/moreno.zolfo/virome_data/high_enrichment/contigs_tg/prokka";
 circularContigReport="/shares/CIBIO-Storage/CM/scratch/users/moreno.zolfo/virome_data/high_enrichment/circulars/all_report.circ.tsv"
-mappingsReport='/shares/CIBIO-Storage/CM/scratch/users/moreno.zolfo/virome_data/high_enrichment/new_mappings_new/all2.csv'
+mappingsReport='/shares/CIBIO-Storage/CM/scratch/users/moreno.zolfo/virome_data/high_enrichment/new_mappings_new/all3.csv'
 metadataFile='/shares/CIBIO-Storage/CM/scratch/users/moreno.zolfo/virome_data/high_enrichment/metadata.met'
 PFAMVFAMFolder='/shares/CIBIO-Storage/CM/scratch/users/moreno.zolfo/virome_data/high_enrichment/contigs_tg/mappings/pfam_vfam/'
 avaFile='/shares/CIBIO-Storage/CM/scratch/users/moreno.zolfo/virome_data/high_enrichment/ava/blast_ava_3_megablast_ws13_80pc_1000nt.csv'
 
 
-circo=pd.read_table(circularContigReport,header=0).fillna('--')
+circo=pd.read_table(circularContigReport,header=0,low_memory=False).fillna('--')
 circo['cCode'] = map(getCCode,circo['Reference Name'])
 
 circo['circFoldChange'] = circo['Mean Coverage around 0 (Flipped)'] / circo['Mean Coverage around 0 (Native)']
 circo['circLog2FoldChange'] = np.log2(circo['circFoldChange'])
 circo['circularityScore_v1'] = np.log2(circo['circFoldChange']) + circo['ORF crossing the barrier'] + (circo['BlastEnds_length']/100)
 
-blasto=pd.read_table(mappingsReport,header=0).fillna('--')
+blasto=pd.read_table(mappingsReport,header=0,low_memory=False).fillna('--')
 blasto['cCode'] = map(getCCode,blasto['Reference Name'])
 
 contigsDB={}
@@ -213,7 +212,7 @@ if 1:
 	for line in open(avaFile):
 		qseqid,sseqid,pident,length,mismatch,gapopen,qstart,qend,sstart,send,evalue,bitscore,qlen,slen = line.strip().split()
 
-		if (qseqid == sseqid) or float(pident) < 80 or int(length) < 1500:
+		if (qseqid == sseqid) or float(pident) < 80 or int(length) < 1000:
 			continue
 
 		#c5221-1__75__Moreno-GallegoJL_2019__17A_largeInsert__17A_largeInsert__NODE_50_length_6595_cov_8.06376
@@ -559,7 +558,7 @@ print ("BLASTO")
 myContigs=pd.merge(myContigs,circo,how="left",on=['cCode','contig_id']).fillna('-')
 
 print ("CIRCO")
-myContigs=pd.merge(myContigs,pd.read_table(metadataFile,header=0),how='left',on=['dataset','sample']).fillna('N/A')
+myContigs=pd.merge(myContigs,pd.read_table(metadataFile,header=0,low_memory=False),how='left',on=['dataset','sample']).fillna('N/A')
 
 print ("FINAL")
 

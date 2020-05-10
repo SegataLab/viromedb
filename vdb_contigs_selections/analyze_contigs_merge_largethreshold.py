@@ -141,20 +141,19 @@ myContigs['samples_SGB_assigned_best_and_notbest'] = myContigs['samples_same_as_
 #thr_samples_SGB_assigned_best_and_notbest = 25
 #thr_samples_notbest_unbinned = 30
 
-thr_prev_hits_other_dataset_distinct = 3
-thr_other_contigs_w_this_SGB_ALN_length = 15000
+#thr_prev_hits_other_dataset_distinct = 2
+thr_other_contigs_w_this_SGB_ALN_length = 50000
 
-thr_samples_same_as_best = 10
+thr_samples_same_as_best = 35
 thr_samples_notbest_binned_otherbin = 20
-thr_samples_SGB_assigned_best_and_notbest = 20
-thr_samples_notbest_unbinned = 50
+thr_samples_SGB_assigned_best_and_notbest = 50
+thr_samples_notbest_unbinned = 30
 
 myContigs['prev_hits_other_dataset_distinct'] = myContigs['prev_hits_other_dataset_distinct'].replace('', np.nan).fillna(0)
 
 
 filtered_mc  = myContigs[ \
  (myContigs['origin'] == 'STOOL') & \
- (myContigs['prev_hits_other_dataset_distinct'] >= thr_prev_hits_other_dataset_distinct) & \
  (myContigs['other_contigs_w_this_SGB_ALN_length'].fillna(0).astype(int) <= thr_other_contigs_w_this_SGB_ALN_length) & \
  (myContigs['samples_same_as_best'].fillna(0).astype(int) <= thr_samples_same_as_best) & \
  (myContigs['samples_notbest_binned_otherbin'].fillna(0).astype(int) <= thr_samples_notbest_binned_otherbin) & \
@@ -163,5 +162,5 @@ filtered_mc  = myContigs[ \
 
 
 print("FINAL SHAPE: ", filtered_mc.shape)
-myContigs[outFieldList].to_csv('out_toplen.csv',sep='\t')
-filtered_mc.to_csv('out_toplen_filtered.csv',sep='\t')
+#myContigs[outFieldList].to_csv('out_toplen.csv',sep='\t')
+filtered_mc.to_csv('out_toplen_filtered_largethresholds.csv',sep='\t')
