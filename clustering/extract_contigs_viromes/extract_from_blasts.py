@@ -1,4 +1,4 @@
-#python3
+#!/usr/bin/env python3
 
 import argparse,os
 import sys
@@ -6,7 +6,7 @@ from Bio import SeqIO
 import glob
 import bz2
 from Bio import SeqIO
-#/shares/CIBIO-Storage/CM/scratch/data/viromes/KimY_2015/contigs/AB_ballast_water/SRR1593033_filtered.fasta.bz2
+
 staFolder='/shares/CIBIO-Storage/CM/scratch/data/viromes/'
 
 
@@ -46,7 +46,6 @@ for lin in open(args.file):
 		metaFile=staFolder+'/'+oriDataset+'/contigs/'+oriSample+'/'+oriRun+'_filtered.fasta.bz2'
 
 	#	print(oriDataset,oriSample,oriRun,oriNode,metaFile)
- 
 		#handle = bz2.open(metaFile, 'r')
 		#for r in SeqIO.parse(handle, 'fasta'))) 
 		if metaFile not in cont:
@@ -57,7 +56,6 @@ for lin in open(args.file):
 
 		if sseqid not in promisingVirusDectection:
 			promisingVirusDectection[sseqid] = {}
-		
 		if metaFile not in promisingVirusDectection[sseqid]:
 			promisingVirusDectection[sseqid][metaFile] = {}
 
@@ -75,7 +73,7 @@ print("P2",itt)
 ii=0
 for k,v in cont.items():
 	ii+=1
-	print (ii,k)
+	print (ii,' / ',len(cont.items()),' : ',k)
 	hdl=bz2.open(k,mode='rt')
 	for u in SeqIO.parse(hdl,"fasta"):
 
@@ -92,11 +90,11 @@ utp=[]
 for p_virus,td in promisingVirusDectection.items():
 	for virome,te in td.items():
 		for node,(pident,breadthofcoverage) in te.items():
- 
+
 			virome_sample_signature='__'.join(metadata[virome])
 			node_signature=virome_sample_signature + '__' + node
 			utp.append( {'candidate_virus':p_virus,'virome_sample': virome_sample_signature ,'virome_contig_full':node_signature,'max_pident':pident,'max_breadth':breadthofcoverage} ) 
-	
+
 import pandas as pd
 import numpy as np
 a=pd.DataFrame.from_dict(utp)
@@ -106,4 +104,3 @@ a.to_csv('hits_raw.csv',sep='\t')
 pd.pivot_table(a,columns='candidate_virus',index='virome_contig_full',values='max_pident',aggfunc=len).to_csv('hits_by_pident_allcontigs.csv',sep='\t')
 pd.pivot_table(a,columns='candidate_virus',index='virome_sample',values='max_pident',aggfunc=len).to_csv('hits_by_len.csv',sep='\t')
 pd.pivot_table(a,columns='candidate_virus',index='virome_sample',values='max_pident',aggfunc=np.max).to_csv('hits_by_pident.csv',sep='\t')
-

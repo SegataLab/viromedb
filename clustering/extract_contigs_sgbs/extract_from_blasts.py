@@ -15,8 +15,9 @@ unbinnedNodes2label={}
 unbinnedNodes2PromisingVirus={}
 csseq={}
 staFolder=args.sgbs_folder
-uot=0
-for line in open(args.file):
+uot=0 
+for line in open(args.file): 
+
 	if not fline:
 		fline=True
 		continue
@@ -33,8 +34,11 @@ for line in open(args.file):
 TLP={}
 itp=0
 multiplicities={}
+filesRead=0
+print("CCSEQs: ",len(csseq),'files')
 for fas,seqs in csseq.items():
-	print(fas)
+	filesRead+=1
+	print(filesRead,fas)
 	for lin in open(fas):
 
 		qseqid,sseqid,pident,length,mismatch,gapopen,qstart,qend,sstart,send,evalue,bitscore,qlen,slen = lin.strip().split()
@@ -113,12 +117,13 @@ for k,v in TLP.items():
 
 		
 
-print("EXTRACTING", len(toExtract),'files')
+print("EXTRACTING SEQS from ", len(toExtract),'files')
 
 TYLA=[]
-
+extr_file=0
 for file,nodes in toExtract.items():
-	print(file,len(nodes))
+	extr_file+=1
+	print(extr_file,' / ',len(toExtract),' : ', file,len(nodes),' seqs')
 	#print(nodes)
 
 	for seq in SeqIO.parse(file,'fasta'):
