@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 import pandas as pd
 import sys
 import numpy as np
@@ -12,16 +14,18 @@ from Bio.Seq import Seq
 from Bio.SeqRecord import SeqRecord
 from Bio.Alphabet import IUPAC
 
+
 parser = argparse.ArgumentParser()
 parser.add_argument('--original_filtered_contigs') 
-parser.add_argument('--reclustered_genomes_folder') 
+parser.add_argument('--cluster_pipeline_folder') 
 parser.add_argument('--refseq_file') 
 parser.add_argument('--percentile',default=70, type=int) 
 parser.add_argument('--output_folder') 
-parser.add_argument('--strict', action='store_true') 
+parser.add_argument('--strict', action="store_true") 
+parser.add_argument('--debug', action='store_true') 
 
  
-args = parser.parse_args()
+args = parser.parse_args() 
 
 
 refseq= SeqIO.to_dict(SeqIO.parse(args.refseq_file,'fasta'))
@@ -29,9 +33,14 @@ refseq= SeqIO.to_dict(SeqIO.parse(args.refseq_file,'fasta'))
 originalContigs= pd.read_table(args.original_filtered_contigs,header=0)
 originalContigs['contig'] = originalContigs['cCode']+'__'+originalContigs['enrichment'].astype(str)+'__'+originalContigs['dataset']+'__'+originalContigs['sample']+'__'+originalContigs['run']+'__'+originalContigs['contig_id']
 
-a2= pd.read_table(args.reclustered_genomes_folder+'/clusters_step3.tsv',header=0)
+a2= pd.read_table(args.cluster_pipeline_folder+'/step3_clusters/clusters_step3.tsv',header=0)
 
 flpc=originalContigs.merge(a2,on='contig',how='inner')
+
+
+flpc.loc[flpc["fullClusterID"].isnull(),'fullClusterID'] = flpc["clusterID"]
+
+
 
 if not os.path.isdir(args.output_folder):
 		os.mkdir(args.output_folder)
@@ -40,10 +49,27 @@ if not os.path.isdir(args.output_folder):
 
 
 clusterInfos=[]
-for cluster in list(set(flpc['fullClusterID'])):
-	
+clusterPointer=0
+#print (originalContigs.shape)
+#print (a2.shape)
+#print (flpc.shape)
+#sys.exit(0)
 
-	seqsInCluster = [ _ for _ in SeqIO.parse(args.reclustered_genomes_folder+'/fnas/'+cluster+'.fna','fasta')]
+number_of_clusters=len(list(set(flpc['fullClusterID'])))
+
+for cluster in list(set(flpc['fullClusterID'])):
+
+	clusterPointer+=1
+	
+	print(clusterPointer," / ",number_of_clusters, "\t: BEGINNING cluster ",cluster)
+
+	if "__" in cluster:
+		clusterSequencesFile = args.cluster_pipeline_folder+'/step3_clusters/fnas/'+cluster+'.fna'
+	else:
+		clusterSequencesFile = args.cluster_pipeline_folder+'/step1/centroids/'+cluster+'.fasta'
+
+
+	seqsInCluster = [ _ for _ in SeqIO.parse(clusterSequencesFile,'fasta')]
 
 	repGenomes=flpc[flpc['fullClusterID'] == cluster]['RefSeq_besthit_what'].dropna().unique()
 	viromeContigsHere=flpc[flpc['fullClusterID'] == cluster]['contig'].dropna().unique()
@@ -51,7 +77,7 @@ for cluster in list(set(flpc['fullClusterID'])):
 	repGenomesList=[] 
 	if (repGenomes.size):
 		
-		print(repGenomes)
+		print("\tReference Genomes here: ",repGenomes)
 		for t in repGenomes:
 			seqsInCluster.append(refseq[t])
 			repGenomesList.append(refseq[t].id)
@@ -65,41 +91,52 @@ for cluster in list(set(flpc['fullClusterID'])):
 		remaining_seqs=[x for x in seqsInCluster if ( len(x.seq) >= percentile_median_length_of_cluster*0.75) and (len(x.seq) <= percentile_median_length_of_cluster*1.25)  ]
 	else:
 		remaining_seqs=[x for x in seqsInCluster if ( ( len(x.seq) >= percentile_median_length_of_cluster*0.75) and (len(x.seq) <= percentile_median_length_of_cluster*1.25) ) or x.id in viromeContigsHere or x.id in repGenomesList]
+	
 
-	print (cluster,len(seqsInCluster), len(remaining_seqs), percentile_median_length_of_cluster)
+	if len(remaining_seqs) == 0:
+		print("\tWARNING: This cluster is now empty :( ")
+		remaining_seqs = seqsInCluster
 
 
-	#select the rep:
-	print(repGenomesList)
-	print(repGenomes)
-	ate=[refseq[_] for _ in repGenomesList]
-	if repGenomesList:
- 		
+	remaining_seqs_ids=[_.id for _ in remaining_seqs]
+
+	print ('\t',len(seqsInCluster),' seqs, of which ', len(remaining_seqs),' have: ',percentile_median_length_of_cluster*.75,' < length < ', percentile_median_length_of_cluster*1.25)
+
+ 
+
+	
+
+	#if we have a repGenomesList and any of the remaining contigs are still there:
+	if repGenomesList and any(x in remaining_seqs_ids for x in repGenomesList):
+		ate=[refseq[_] for _ in repGenomesList]
 		clusterRep= sorted(ate,key=lambda x: len(x.seq),reverse=True)[0]
+	#else pick the longest remaining sequence
 	else:
 		clusterRep= sorted(remaining_seqs,key=lambda x: len(x.seq),reverse=True)[0]
 
 
 
-	print ("REP OF THE CLUSTER: ",clusterRep.id)
+	print ("\tCluster Representant: ",clusterRep.id)
 	tempSubj = tempfile.NamedTemporaryFile()
-	print(tempSubj.name)
-
 	SeqIO.write([clusterRep],tempSubj.name,'fasta')
 
-	print ("-"*60)
-	for remaining_seq in remaining_seqs:
-		print ('    | ',remaining_seq.id)
-	print ("-"*60)
-	#ref="abracadabra"
+	if args.debug: 
+		print ("-"*28," Cluster Composition ","-"*28)
+		for remaining_seq in remaining_seqs:
+			print ('\t| ',remaining_seq.id)
+		print ("-"*60)
+	
 	#SeqIO.write(remaining_seqs,args.output_folder+'/fnas/'+cluster+'.fna','fasta')
-	print ("NOW ALIGNING EACH ELEMENT OF THE CLUSTER ", cluster)
-
+	print ("\tNow aligning elements of the cluster ", cluster,len(remaining_seqs))
+	
 	blast_command = ['blastn','-task','megablast','-subject',tempSubj.name,'-query','-','-outfmt',"6 qseqid sseqid length pident sstrand qstart qend sstart send"]
 
 	clustersElement = {}
+
 	for seqToCheck in remaining_seqs:
-		#print ("SEQ:",seqToCheck.id)
+
+		if args.debug: print ("\tAligning member of ",cluster,'(',seqToCheck.id,') against rep of cluster: ',clusterRep.id)
+
 		clustersElement[seqToCheck.id] = []
 		p1 = subprocess.Popen(blast_command, stdin=subprocess.PIPE, stdout=subprocess.PIPE,text=True)
 		stdout_value = p1.communicate(seqToCheck.format('fasta'))[0]
@@ -109,12 +146,13 @@ for cluster in list(set(flpc['fullClusterID'])):
 				qseqid,sseqid,leng_of_alignment,pident,strand_of_alignment, qstart, qend, sstart, send = blout.split('\t')
 
 				if ( float(leng_of_alignment) > percentile_median_length_of_cluster / 10.0 ):
-					#print(blout, "OK")
+					
+					#if args.debug: print ("\t",cluster,'(',seqToCheck.id,') against rep of cluster: ',clusterRep.id)
 					clustersElement[seqToCheck.id].append(strand_of_alignment)
 				#else:
 					#print(blout, "NO")
 
-	
+		
 	clustersElementFinalOutcome_rep = Counter(clustersElement[clusterRep.id]).most_common()[0][0]
 	contigs_to_flip=[]
 
@@ -124,7 +162,9 @@ for cluster in list(set(flpc['fullClusterID'])):
 			clustersElementFinalOutcome = Counter(v).most_common()[0][0]
 			if clustersElementFinalOutcome != clustersElementFinalOutcome_rep:
 				contigs_to_flip.append(k)
-		#otherwise not flip!
+				if args.debug: print ("\t",k,"Needs to be flipped: rep has alignment: ",clustersElementFinalOutcome_rep, "target has: ", v)
+
+		
 
 	#flip the seqs
 	finalContigsForTheCluster = []
@@ -138,10 +178,10 @@ for cluster in list(set(flpc['fullClusterID'])):
 	
 	#write
 	
-	print(cluster, len(finalContigsForTheCluster), len(contigs_to_flip) ) 
+	print("\t",cluster, len(finalContigsForTheCluster),' final contigs', len(contigs_to_flip),' seqs to flip' ) 
 	clusterInfos.append({'fullClusterID': cluster,'tree_contigs': len(finalContigsForTheCluster), 'flippedContigs': len(contigs_to_flip)})
 	SeqIO.write(finalContigsForTheCluster,args.output_folder+'/fnas/'+cluster+'.fna','fasta')
-	
+	print('*'*50)
 	
 
 a=pd.DataFrame.from_dict(clusterInfos)

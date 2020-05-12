@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 import sys
 import pandas as pd
 import os
@@ -23,10 +25,10 @@ args = parser.parse_args()
 contigsToExtract={}
 
 for fel in glob.glob(args.step3_folder+'/*.uc'):
- 
+	print(fel)
 	for line in open(fel,'r'):
 		lun = line.strip().split()
-#		print (lun)
+		
 		recType=lun[0]
 		clusterID=os.path.basename(fel).replace('.fasta_clusters90.uc','')
 		fullClusterID = clusterID+'__c'+lun[1]
