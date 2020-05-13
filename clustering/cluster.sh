@@ -28,8 +28,7 @@ export ODIR=${odir};
 #find ${odir} -type d -empty -delete;
 mkdir -p ./${odir};
 
-echo ${VDB_MAIN_PATH}/unify.py --original_filtered_contigs ${CONTIG_TABLE} --reclustered_genomes_folder ${odir}/step3_clusters/ --refseq_file ${REFSEQ91} --percentile 50 --output_folder ${odir}/step4_clusters/ --strict
-exit 0;
+ 
 #echo ${VDB_MAIN_PATH}/process_cluster_uc_files_step2.py --input_folder ${odir}/step1/centroids/ --output ${odir}/step2_clusters/ --allcontigs ${BASE}/#against_sgbs/sequences.fna ${BASE}/against_viromes/sequences.fna ${BASE}/promising_contigs.fna
 #exit 0;
 
@@ -93,10 +92,6 @@ else
 	echo "    -> step2_clusters folder already found. Moving on"
 fi;
 
-
-
-
-
 echo "Step 3 - Reclustering "
 #if [ ! -d ${odir}/step3_clusters/ ]; then
 
@@ -122,18 +117,18 @@ fi;
 
 mkdir -p ${odir}/step4_clusters/
 mkdir -p ${odir}/step4_clusters/fnas
-echo "Step 4 - Putting clusters in their final form"
-${VDB_MAIN_PATH}/unify.py --original_filtered_contigs ${CONTIG_TABLE} --cluster_pipeline_folder ${odir} --cluster_pipeline_folder ${odir}/step3_clusters/  --refseq_file ${REFSEQ91} --percentile 50 --output_folder ${odir}/step4_clusters/ --strict
 
 
-
-exit 0;
+if [ ! -f ${odir}/step4_clusters/united_clusters.csv ]; then
+	echo "Step 4 - Putting clusters in their final form"
+	${VDB_MAIN_PATH}/unify.py --original_filtered_contigs ${CONTIG_TABLE} --cluster_pipeline_folder ${odir} --cluster_pipeline_folder ${odir}/step3_clusters/  --refseq_file ${REFSEQ91} --percentile 50 --output_folder ${odir}/step4_clusters/ --strict
+fi;
 
 echo "Step 4 - TrimAl"
-ls ${odir}/step4_clusters/fnas/*.fna | parallel -j ${ncores} 'i={}; echo $i $(cat ${i//.fna/.aln} | grep ">" | wc -l) seqs; mafft $i > ${i//.fna/.aln}; trimal -gt 0.8 -in ${i//.fna/.aln} -out ${i//.fna/.trim};';
+ls ${odir}/step4_clusters/fnas/*.fna | parallel -j ${ncores} 'i={}; echo $i $(cat ${i//.fna/.aln} | grep ">" | wc -l) seqs; mafft --thread 2 $i > ${i//.fna/.aln}; trimal -gt 0.7 -cons 70 -in ${i//.fna/.aln} -out ${i//.fna/.trim};';
 
 echo "Step 4 - Trees"
-mkdir -p ${odir}/step3_clusters/trees/
-ls ${odir}/step4_clusters/fnas/*.trim | parallel -j 8 -env odir 'i={}; bn=$(basename $i); raxmlHPC-PTHREADS-SSE3 -m GTRGAMMA -p 12345 -# 30 -s ${i} -n ${bn//.trim/} -T 4 -w $(realpath ${odir})/step4_clusters/trees/';
+mkdir -p ${odir}/step4_clusters/trees/
+ls ${odir}/step4_clusters/fnas/*.trim | parallel -j 8 --env odir 'i={}; bn=$(basename $i); echo ${i}; raxmlHPC-PTHREADS-SSE3 -m GTRGAMMA -p 12345 -# 10 -s ${i} -n ${bn//.trim/} -T 4 -w $(realpath ${odir})/step4_clusters/trees/';
 
 

@@ -58,7 +58,7 @@ clusterPointer=0
 number_of_clusters=len(list(set(flpc['fullClusterID'])))
 
 for cluster in list(set(flpc['fullClusterID'])):
-
+	
 	clusterPointer+=1
 	
 	print(clusterPointer," / ",number_of_clusters, "\t: BEGINNING cluster ",cluster)
@@ -108,7 +108,8 @@ for cluster in list(set(flpc['fullClusterID'])):
 
 	#if we have a repGenomesList and any of the remaining contigs are still there:
 	if repGenomesList and any(x in remaining_seqs_ids for x in repGenomesList):
-		ate=[refseq[_] for _ in repGenomesList]
+		ate=[refseq[_] for _ in repGenomesList if _ in remaining_seqs_ids]
+
 		clusterRep= sorted(ate,key=lambda x: len(x.seq),reverse=True)[0]
 	#else pick the longest remaining sequence
 	else:
