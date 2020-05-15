@@ -4,7 +4,7 @@
 # Example: /shares/CIBIO-Storage/CM/scratch/users/moreno.zolfo/virome_data/viromedb//hpc_launchers/vdb_build_launcher.sh /shares/CIBIO-Storage/CM/scratch/users/moreno.zolfo/virome_data/high_enrichment/contigs_tg/original/  /shares/CIBIO-Storage/CM/scratch/users/moreno.zolfo/virome_data/high_enrichment/vdb8/
 
 a=0;
-
+curDir=$(realpath $(dirname $0));
 VIROMEDB_FOLDER=/shares/CIBIO-Storage/CM/scratch/users/moreno.zolfo/virome_data/viromedb/
 
 VDB_IN_FOLDER=$1 # /shares/CIBIO-Storage/CM/scratch/users/moreno.zolfo/virome_data/high_enrichment/contigs_tg/original/
@@ -26,7 +26,7 @@ while true; do
 		if [ ! -f ${VDB_OUT_FOLDER}/${bnd//.orig.fna/.csv} ]; then
 			if [ $b -lt 30 ]; then 
 
-			echo qsub -q short_cpuQ -v fna="${k}",VDB_OUT_FOLDER="${VDB_OUT_FOLDER}" -N VDB8_${bnd//.orig.fna/} -l select=1:ncpus=1 ${VIROMEDB_FOLDER}/vdb_contigs_selections/hpc_launchers/vdb_build_launch.sh;
+			echo qsub -q short_cpuQ -v fna="${k}",VDB_OUT_FOLDER="${VDB_OUT_FOLDER}" -N VDB8_${bnd//.orig.fna/} -l select=1:ncpus=1 ${curDir}/vdb_build_launch.sh;
 
 			b=$((b+1));
 			bt=$((bt+1));

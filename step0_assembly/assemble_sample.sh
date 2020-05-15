@@ -6,7 +6,7 @@
 dn=$datasetName #DatasetName
 fn=$sampleName #sampleName
 vn=$runName #variantName
-
+curDir=$(dirname $0);
 if [ -z "$assembler" ]; then
 	assembler_mode="guess";
 else
@@ -20,7 +20,7 @@ ldn=${dn//"/"/"__"};
 FASTQBASE=${prefix}
 
 #TEMPFOLDER=/home/moreno.zolfo/assembly/${ldn}/${fn}__${vn}/
-
+HUMAN_INDEX="/home/moreno.zolfo/indexes/hg19"
 NODE_TEMPFOLDER=/mnt/localscratch/
 SERVER_TEMPFOLDER=/shares/CIBIO-Storage/CM/tmp/mzolfo/tmp_data/assembly/
 
@@ -41,11 +41,13 @@ mkdir -p $TEMPFOLDER/dirty;
 
 
 echo "Performing QC";
-perl /shares/CIBIO-Storage/CM/mir/tools/bin/trim_galore --stringency 5 --length 75 --quality 20 --max_n 2 --trim-n --dont_gzip --no_report_file --output_dir ${TEMPFOLDER}/dirty/ ${FASTQBASE}/${ldn}/reads/${fn}/*.fastq
+#perl /shares/CIBIO-Storage/CM/mir/tools/bin/trim_galore
+
+trim_galore --stringency 5 --length 75 --quality 20 --max_n 2 --trim-n --dont_gzip --no_report_file --output_dir ${TEMPFOLDER}/dirty/ ${FASTQBASE}/${ldn}/reads/${fn}/*.fastq
 
 echo "Removing HG19";
 
-HUMAN_INDEX="/home/moreno.zolfo/indexes/hg19"
+
 
 if [ -f ${TEMPFOLDER}/dirty/${vn}_UN_trimmed.fq ]; then
 	echo "Removing HG19 (UN)";
@@ -75,7 +77,7 @@ fi;
 
 if [ -f ${TEMPFOLDER}/dirty/${vn}_R1.fastq ] && [ -f ${TEMPFOLDER}/dirty/${vn}_R2.fastq ] ; then
 	echo "Split & Sort (as both R1 and R2 files were generated";
-	split_and_sort.py --R1 ${TEMPFOLDER}/dirty/${vn}_R1.fastq  --R2 ${TEMPFOLDER}/dirty/${vn}_R2.fastq -p ${TEMPFOLDER}/${vn};
+	${curDir}/../utils/split_and_sort.py --R1 ${TEMPFOLDER}/dirty/${vn}_R1.fastq  --R2 ${TEMPFOLDER}/dirty/${vn}_R2.fastq -p ${TEMPFOLDER}/${vn};
 fi
 
 
@@ -109,7 +111,7 @@ if [ $assembler_mode == "guess" ]; then
 			echo "Assembly with Megahit [SE]";
 			megahit -t ${nproc} -r ${TEMPFOLDER}/${vn}_UN.fastq -o ${TEMPFOLDER}/ass;
 			if [ -f ${TEMPFOLDER}/ass/final.contigs.fa ]; then
-				python3 /shares/CIBIO-Storage/CM/news/users/moreno.zolfo/mytools/megahit2spades.py ${TEMPFOLDER}/ass/final.contigs.fa ${TEMPFOLDER}/ass/contigs.fasta;
+				${curDir}/../utils/megahit2spades.py ${TEMPFOLDER}/ass/final.contigs.fa ${TEMPFOLDER}/ass/contigs.fasta;
 			fi;
 		fi;	
 	else
@@ -133,7 +135,7 @@ elif [ $assembler_mode == "megahit" ]; then
 	fi
 
 	if [ -f ${TEMPFOLDER}/ass/final.contigs.fa ]; then
-		python3 /shares/CIBIO-Storage/CM/news/users/moreno.zolfo/mytools/megahit2spades.py ${TEMPFOLDER}/ass/final.contigs.fa ${TEMPFOLDER}/ass/contigs.fasta;
+		${curDir}/../megahit2spades.py ${TEMPFOLDER}/ass/final.contigs.fa ${TEMPFOLDER}/ass/contigs.fasta;
 	fi;
 
 elif [ $assembler_mode == "spades" ]; then
@@ -156,7 +158,7 @@ fi;
 
 
 if [ -f ${TEMPFOLDER}/ass/contigs.fasta ]; then
-	python /shares/CIBIO-Storage/CM/news/users/moreno.zolfo/mytools/sequenceExtract.py --query NODE --minlen 500 ${TEMPFOLDER}/ass/contigs.fasta > ${TEMPFOLDER}/ass/contigs_filtered.fasta;
+	${curDir}/../sequenceExtract.py --query NODE --minlen 500 ${TEMPFOLDER}/ass/contigs.fasta > ${TEMPFOLDER}/ass/contigs_filtered.fasta;
 	
 	CMSERVER_FOLDER=${outFolder}/${ldn}/${fn}/
 	mkdir -p ${CMSERVER_FOLDER};

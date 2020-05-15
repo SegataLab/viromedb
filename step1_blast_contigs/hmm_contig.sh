@@ -11,7 +11,7 @@ folderName=$(basename $dirName);
 a_baseName=$(basename $sourceContigFile);
 noext_baseName=${a_baseName//.ffn/};
 #noext_baseNameD=${noext_baseName//.gbf/};
- 
+HMM_OUT='/shares/CIBIO-Storage/CM/scratch/users/moreno.zolfo/virome_data/high_enrichment/contigs_tg/mappings/pfam_vfam';
 
 cp ${sourceContigFile} /tmp/${folderName}__${noext_baseName}.ffn;
 
@@ -27,15 +27,15 @@ echo "[*] Done"
  
 echo "[*] Clean"
 #mv /tmp/${a_dirName}__${noext_baseName}.fasta ${folderName}/contigs_filtered_500.fasta;
-mv /tmp/${folderName}__${noext_baseName}.vfam14.tbl /shares/CIBIO-Storage/CM/scratch/users/moreno.zolfo/virome_data/high_enrichment/contigs_tg/mappings/pfam_vfam/${finalName}.vfam14.tbl
-mv /tmp/${folderName}__${noext_baseName}.vfam19.tbl /shares/CIBIO-Storage/CM/scratch/users/moreno.zolfo/virome_data/high_enrichment/contigs_tg/mappings/pfam_vfam/${finalName}.vfam19.tbl
-mv /tmp/${folderName}__${noext_baseName}.pfamA.tbl /shares/CIBIO-Storage/CM/scratch/users/moreno.zolfo/virome_data/high_enrichment/contigs_tg/mappings/pfam_vfam/${finalName}.pfamA.tbl
-mv /tmp/${folderName}__${noext_baseName}.vfam14.dom /shares/CIBIO-Storage/CM/scratch/users/moreno.zolfo/virome_data/high_enrichment/contigs_tg/mappings/pfam_vfam/${finalName}.vfam14.dom
-mv /tmp/${folderName}__${noext_baseName}.vfam19.dom /shares/CIBIO-Storage/CM/scratch/users/moreno.zolfo/virome_data/high_enrichment/contigs_tg/mappings/pfam_vfam/${finalName}.vfam19.dom
-mv /tmp/${folderName}__${noext_baseName}.pfamA.dom /shares/CIBIO-Storage/CM/scratch/users/moreno.zolfo/virome_data/high_enrichment/contigs_tg/mappings/pfam_vfam/${finalName}.pfamA.dom
-mv /tmp/${folderName}__${noext_baseName}.vfam14.out /shares/CIBIO-Storage/CM/scratch/users/moreno.zolfo/virome_data/high_enrichment/contigs_tg/mappings/pfam_vfam/${finalName}.vfam14.out
-mv /tmp/${folderName}__${noext_baseName}.vfam19.out /shares/CIBIO-Storage/CM/scratch/users/moreno.zolfo/virome_data/high_enrichment/contigs_tg/mappings/pfam_vfam/${finalName}.vfam19.out
-mv /tmp/${folderName}__${noext_baseName}.pfamA.out /shares/CIBIO-Storage/CM/scratch/users/moreno.zolfo/virome_data/high_enrichment/contigs_tg/mappings/pfam_vfam/${finalName}.pfamA.out
-mv /tmp/${folderName}__${noext_baseName}.vfam14.ptbl /shares/CIBIO-Storage/CM/scratch/users/moreno.zolfo/virome_data/high_enrichment/contigs_tg/mappings/pfam_vfam/${finalName}.vfam14.ptbl
-mv /tmp/${folderName}__${noext_baseName}.vfam19.ptbl /shares/CIBIO-Storage/CM/scratch/users/moreno.zolfo/virome_data/high_enrichment/contigs_tg/mappings/pfam_vfam/${finalName}.vfam19.ptbl
-mv /tmp/${folderName}__${noext_baseName}.pfamA.ptbl /shares/CIBIO-Storage/CM/scratch/users/moreno.zolfo/virome_data/high_enrichment/contigs_tg/mappings/pfam_vfam/${finalName}.pfamA.ptbl
+mv /tmp/${folderName}__${noext_baseName}.vfam14.tbl ${HMM_OUT}/${finalName}.vfam14.tbl
+mv /tmp/${folderName}__${noext_baseName}.vfam19.tbl ${HMM_OUT}/${finalName}.vfam19.tbl
+mv /tmp/${folderName}__${noext_baseName}.pfamA.tbl ${HMM_OUT}/${finalName}.pfamA.tbl
+mv /tmp/${folderName}__${noext_baseName}.vfam14.dom ${HMM_OUT}/${finalName}.vfam14.dom
+mv /tmp/${folderName}__${noext_baseName}.vfam19.dom ${HMM_OUT}/${finalName}.vfam19.dom
+mv /tmp/${folderName}__${noext_baseName}.pfamA.dom ${HMM_OUT}/${finalName}.pfamA.dom
+mv /tmp/${folderName}__${noext_baseName}.vfam14.out ${HMM_OUT}/${finalName}.vfam14.out
+mv /tmp/${folderName}__${noext_baseName}.vfam19.out ${HMM_OUT}/${finalName}.vfam19.out
+mv /tmp/${folderName}__${noext_baseName}.pfamA.out ${HMM_OUT}/${finalName}.pfamA.out
+mv /tmp/${folderName}__${noext_baseName}.vfam14.ptbl ${HMM_OUT}/${finalName}.vfam14.ptbl
+mv /tmp/${folderName}__${noext_baseName}.vfam19.ptbl ${HMM_OUT}/${finalName}.vfam19.ptbl
+mv /tmp/${folderName}__${noext_baseName}.pfamA.ptbl ${HMM_OUT}/${finalName}.pfamA.ptbl

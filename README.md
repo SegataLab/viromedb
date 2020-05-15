@@ -65,9 +65,11 @@ The resulting output is a (filtered) selection of all the assembled contigs, mer
 
 Finally, `extract_contigs_from_vdb_report.py` reads the filtered contigs list and extracts the associated sequences in `FASTA` format.
 
-## Contigs Clustering ##
+## Step 3: Contigs Clustering ##
 
-WIP
+This steps clusters the filtered contis, then runs a BLAST search on assembled metagenomes and viromes to retrieve homologues in there. The clustering is then performed again to produce multiple sequence alignments.
+
+*Documentation: Work in Progress*
 
 ## Utility data and scripts ##
 

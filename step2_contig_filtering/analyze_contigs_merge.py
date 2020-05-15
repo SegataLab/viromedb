@@ -4,7 +4,8 @@ import pandas as pd
 import glob
 import sys
 import numpy as np
-
+import argparse
+import os
 def getCCode(a):
 	return a.split('__')[0]
 
@@ -21,11 +22,21 @@ def islarge(a):
 	else:
 		return 'False'
 
+
+parser = argparse.ArgumentParser(description='')
+parser.add_argument('input_folder',help="the folder where the intermediate csv file from analyze_contigs are located")
+args = parser.parse_args()
+
+
+
+
 etp=[]
-for e in glob.glob('/shares/CIBIO-Storage/CM/scratch/users/moreno.zolfo/virome_data/high_enrichment/vdb8/*.csv'):
-	a=pd.read_csv(e,sep='\t',header=0,low_memory=False)
-	etp.append(a)
-	
+
+if(os.path.isdir(args.input_folder)):
+	for e in glob.glob(args.input_folder+'/*.csv'):
+		a=pd.read_csv(e,sep='\t',header=0,low_memory=False)
+		etp.append(a)
+
 outFieldList=['dataset', \
 'cCode', \
 'ambient', \
@@ -99,7 +110,7 @@ myContigs=pd.concat(etp)
 contigFolder="/shares/CIBIO-Storage/CM/scratch/users/moreno.zolfo/virome_data/high_enrichment/contigs_tg/original/";
 circularContigReport="/shares/CIBIO-Storage/CM/scratch/users/moreno.zolfo/virome_data/high_enrichment/circulars/all_report.circ.tsv"
 mappingsReport='/shares/CIBIO-Storage/CM/scratch/users/moreno.zolfo/virome_data/high_enrichment/new_mappings_new/all4.csv'
-metadataFile='/shares/CIBIO-Storage/CM/scratch/users/moreno.zolfo/virome_data/high_enrichment/metadata.met'
+metadataFile='/shares/CIBIO-Storage/CM/scratch/users/moreno.zolfo/virome_data/viromedb/virome_metadata.txt'
 
 
 circo=pd.read_table(circularContigReport,header=0,low_memory=False).fillna('--')
@@ -117,7 +128,8 @@ myContigs['largeContig'] = list(map(islarge,myContigs['contig_len']))
 
 print ("NATIVE")
 
-
+print(myContigs.shape)
+print(blasto.shape)
 myContigs=pd.merge(myContigs,blasto,how="left",on=['cCode','contig_id'])
 
 print ("BLASTO")
@@ -138,32 +150,37 @@ myContigs['eDatasetName'] = myContigs['dataset'] + ' ' + myContigs['origin']
 myContigs.sort_values(by="contig_len",inplace=True,ascending=False)
 myContigs['samples_SGB_assigned_best_and_notbest'] = myContigs['samples_same_as_best'] + myContigs['samples_notbest_binned_otherbin']
 
-#thr_prev_hits_other_dataset_distinct = 2
-#thr_other_contigs_w_this_SGB_ALN_length = 5000
-#thr_samples_SGB_assigned_best_and_notbest = 25
-#thr_samples_notbest_unbinned = 30
 
-thr_prev_hits_other_dataset_distinct = 3
-thr_other_contigs_w_this_SGB_ALN_length = 15000
+############## STRICT THRESHOLDS ################
+#thr_prev_hits_other_dataset_distinct = 3
+#thr_other_contigs_w_this_SGB_ALN_length = 15000
+#thr_samples_same_as_best = 10
+#thr_samples_notbest_binned_otherbin = 20
+#thr_samples_SGB_assigned_best_and_notbest = 20
+#thr_samples_notbest_unbinned = 50
 
-thr_samples_same_as_best = 10
-thr_samples_notbest_binned_otherbin = 20
-thr_samples_SGB_assigned_best_and_notbest = 20
-thr_samples_notbest_unbinned = 50
+############## LARGE THRESHOLDS ################
+thr_prev_hits_other_dataset_distinct = 0
+thr_other_contigs_w_this_SGB_ALN_length = 50000
+thr_samples_same_as_best = 30
+thr_samples_notbest_binned_otherbin = 50
+thr_samples_SGB_assigned_best_and_notbest = 50
+thr_samples_notbest_unbinned = 20
 
 myContigs['prev_hits_other_dataset_distinct'] = myContigs['prev_hits_other_dataset_distinct'].replace('', np.nan).fillna(0)
 
 
 filtered_mc  = myContigs[ \
+ (myContigs['origin'] == 'REFSEQ') | ( \
  (myContigs['origin'] == 'STOOL') & \
- (myContigs['prev_hits_other_dataset_distinct'] >= thr_prev_hits_other_dataset_distinct) & \
+ (myContigs['prev_hits_other_dataset_distinct'].fillna(0).astype(int) <= thr_prev_hits_other_dataset_distinct) & \
  (myContigs['other_contigs_w_this_SGB_ALN_length'].fillna(0).astype(int) <= thr_other_contigs_w_this_SGB_ALN_length) & \
  (myContigs['samples_same_as_best'].fillna(0).astype(int) <= thr_samples_same_as_best) & \
  (myContigs['samples_notbest_binned_otherbin'].fillna(0).astype(int) <= thr_samples_notbest_binned_otherbin) & \
  (myContigs['samples_SGB_assigned_best_and_notbest'].fillna(0).astype(int) <= thr_samples_SGB_assigned_best_and_notbest) & \
- (myContigs['samples_notbest_unbinned'].fillna(0).astype(int) >= thr_samples_notbest_unbinned) ][outFieldList]
+ (myContigs['samples_notbest_unbinned'].fillna(0).astype(int) >= thr_samples_notbest_unbinned))][outFieldList]
 
 
 print("FINAL SHAPE: ", filtered_mc.shape)
-myContigs[outFieldList].to_csv('out_toplen.csv',sep='\t')
-filtered_mc.to_csv('out_toplen_filtered.csv',sep='\t')
+#myContigs[outFieldList].to_csv('out_toplen.csv',sep='\t')
+filtered_mc.to_csv('out_toplen_filtered_largethresholds.csv',sep='\t')

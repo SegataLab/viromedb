@@ -4,14 +4,14 @@
 #PBS -V
 #nc=4;
 nc=8;
-
+curDir=$(dirname $0);
 dirName=$(dirname $sourceContigFile);
 a_dirName=$(basename $dirName);
 a_baseName=$(basename $sourceContigFile);
 noext_baseName_a=${a_baseName//.orig.fna/};
 noext_baseName=${noext_baseName_a//.fasta/};
 
-python /shares/CIBIO-Storage/CM/news/users/moreno.zolfo/mytools/sequenceExtract.py --query NODE --minlen 500 ${sourceContigFile} > /tmp/${a_dirName}__${noext_baseName}.fasta
+${curDir}/../utils/sequenceExtract.py --query NODE --minlen 500 ${sourceContigFile} > /tmp/${a_dirName}__${noext_baseName}.fasta
 cp ${sourceContigFile} /tmp/${a_dirName}__${noext_baseName}.fasta;
 echo "[BLAST] SGBs"
 blastn -num_threads $nc -max_target_seqs 1000 -db /shares/CIBIO-Storage/CM/news/users/moreno.zolfo/sgb_indexes/sgb_154k/blastdb/sgbs -query /tmp/${a_dirName}__${noext_baseName}.fasta -outfmt "6 qseqid sseqid pident length mismatch gapopen qstart qend sstart send evalue bitscore qlen slen" > /tmp/${a_dirName}__${noext_baseName}.sgbs.blast

@@ -22,6 +22,7 @@ parser.add_argument('--refseq_file')
 parser.add_argument('--percentile',default=70, type=int) 
 parser.add_argument('--output_folder') 
 parser.add_argument('--strict', action="store_true") 
+parser.add_argument('--reinclude_refseq',help="Includes RefSeq matching contigs back in the clustering. Not needed if RefSeq contigs are already part of the initial cluster",action='store_true') 
 parser.add_argument('--debug', action='store_true') 
 
  
@@ -75,9 +76,9 @@ for cluster in list(set(flpc['fullClusterID'])):
 	viromeContigsHere=flpc[flpc['fullClusterID'] == cluster]['contig'].dropna().unique()
 
 	repGenomesList=[] 
-	if (repGenomes.size):
+	if (repGenomes.size and args.reinclude_refseq):
 		
-		print("\tReference Genomes here: ",repGenomes)
+		print("\tRe-including RefSeq Genomes. Reference Genomes are: ",repGenomes)
 		for t in repGenomes:
 			seqsInCluster.append(refseq[t])
 			repGenomesList.append(refseq[t].id)

@@ -1,9 +1,8 @@
 #!/bin/bash
 
-VDB_MAIN_PATH="/shares/CIBIO-Storage/CM/scratch/users/moreno.zolfo/virome_data/viromedb/";
 DATA="/shares/CIBIO-Storage/CM/scratch/users/moreno.zolfo/virome_data/high_enrichment/contigs_tg/original/";
 
-export VDB_MAIN_PATH;
+export curDir=$(realpath $(dirname $0));
 export DATA;
 
 vtp="c7000-1__100__LiangG_2020__D3334__D3334
@@ -82,7 +81,7 @@ c7043-1__100__LiangG_2020__D3734__D3734"
 
 vtp="c8000-1__100__RefSeq__RefSeq__RefSeq"
 
-parallel -j 22 --env VDB_MAIN_PATH --env DATA 'i={}; ${VDB_MAIN_PATH}/vdb_blast_contigs/bread.py ${DATA}/${i}.ncbi.blast#NCBI80k#80#1000 ${DATA}/${i}.vir91.blast#RefSeq#80#500 ${DATA}/${i}.sgbs.blast#SGBS#80#1000 > ./${i}.csv' ::: $vtp;
+parallel -j 22 --env curDir --env DATA 'i={}; ${curDir}/bread.py ${DATA}/${i}.ncbi.blast#NCBI80k#80#1000 ${DATA}/${i}.vir91.blast#RefSeq#80#500 ${DATA}/${i}.sgbs.blast#SGBS#80#1000 > ./${i}.csv' ::: $vtp;
 
 
 #c7037-1__60__LiangG_2020__D3521__D3521
