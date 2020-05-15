@@ -1,12 +1,12 @@
 # viromeDB
-Scripts for the ViromeDB project
 
+The code organized in this repo recapitulates the computational steps for the assembly and curation of the sequences of ViromeDB.
 
-## Virome Assembly Pipeline ##
+The code provided here is not optimized for universal use and is released for information and reproducibility puroposes only. This code cannot be run "as is" and needs to be adapted to your storage and computational architecture to be used.
 
-Viromes with a ViromeQC enrichment score > 50 were assembled into contigs with this pipeline.
+## Step 0: Virome Assembly ##
 
-### assemble_sample.sh
+Viromes with a [ViromeQC](https://github.com/SegataLab/viromeqc) enrichment score > 50 are assembled into contigs and screened with this pipeline (`asemble_sample.sh`)
 
 - Reads cleaned to remove low quality reads with Trim-Galore
 - Human hg19 removal (Bowtie2)
@@ -16,85 +16,81 @@ Viromes with a ViromeQC enrichment score > 50 were assembled into contigs with t
 	- Megahit (if the original reads are single-end)
 - Contigs are fed into Prokka with `--kingdom Viruses`
 
-`launch_assembly_on_dataset.sh` Is the launcher script for the HPC cluster.
+We use `launch_assembly_on_dataset.sh` to submit jobs to the HPC cluster.
 
-## Contigs Mapping ##
+## Step 1: Contigs Mapping ##
 
-### blast_contig.sh / hmm_contig.sh
+In this step, the assembled contigs are mapped against a list of interesting targets (e.g. known viruses, viral proteins...) and unwanted targets (e.g. bacterial genomes, MAGs)
 
-These scripts organize the mappings of each reconstructed contig against:
+### BLASTn against target databases
+
+The `blast_contig.sh` script organize the mappings of each reconstructed contig against:
 
 - NCBI80k (List of 80,000 reference genomes from NCBI)
-- SGBs (The database of 154k genomes from __Pasolli et al.__, 2019)
+- SGBs (The database of 154k genomes from __Pasolli et al.__, 2019 plus all the unbinned contigs not released in the original study)
 - Viral Genomes (from RefSeq release 91)
 
-And performs HMMscan mapping against:
+### HMMscan against target protein models
 
-- pFAM
-- vFAM 2014
-- vFAM 2019 (based on RefSeq Viral Proteins, release 91)
+Each reconstructed contig is mapped with `hmm_contig.sh` against the following models:
 
-### do_bread.sh / bread.py / bread_unify.py
+- (pFAM.A)[https://academic.oup.com/nar/article/47/D1/D427/5144153]
+- (vFAM 2014)[https://www.ncbi.nlm.nih.gov/pmc/articles/PMC4139300/]
+- vFAM 2019 (custom built basing on RefSeq Viral Proteins, release 91)
 
-These scripts analyze the BLAST outputs against multiple databases and, for each contig, report the best match for each db. 
+### BLAST and HMM profiles merging
+
+A set of three scripts (`do_bread.sh`, `bread.py`, `bread_unify.py`) analyzes the BLAST outputs against multiple databases and, for each contig, report the best match for each db. 
 
 For each contig and each database (i.e. NCBI80k, SGBs and RefSeq_Viral_Genomes), the script reports:
-- The best hit `label`, `perc. of identity`, `bitscore` and `alignment length` 
-- The total breadth of coverage against that database
 
+- The best hit `label`, `perc. of identity`, `bitscore` and `alignment length` 
+- The total `breadth of coverage`against that database
 - The best hit is the one with the highest bitscore
 - BLAST hits are filtered for identity (> 80%) and length (> 1000)
 - The overall breadth of coverage is calculated by merging together all the hits that align on the contig. The script hence reports the overall breadth.
 
 
-### prokka_contig.sh
+## Step 2: Contigs Filtering ##
 
-Runs Prokka with `--kingdom Viruses` on the assembled contigs.
+This step of the pipeline uses `analyze_contigs.py` and `analyze_contigs_merge.py` to process the contigs assembled from viromes and to structure the data available in different files for each contig.
 
-### 
+`analyze_contigs.py` can be parallelized on multiple FASTA files to speed up the process. `analyze_contigs_merge.py` unifies the data from different runs of `analyze_contigs.py`.
 
-## Contigs Filtering ##
+The resulting output is a (filtered) selection of all the assembled contigs, merged with:
 
-analyze_contigs_merge_largethreshold2.py
-analyze_contigs_merge_largethreshold.py
-
-This step of the pipeline uses `analyze_contigs.py` and `analyze_contigs_merge.py` to process the contigs assembled from viromes and to structure the data available in different files for each contig. `analyze_contigs.py` can be parallelized on multiple FASTA files to speed up the process. `analyze_contigs_merge.py` unifies the data from different runs of `analyze_contigs.py`.
-
-The resulting output is a (filtered) selection of all the assembled contigs, together with:
 - The metadata for each sample
 - Information on the best hit in each of the bacterial/viral databases (RefSeq, SGBs etc)
 - a set of statistics on the prevalence of each contig across metagenomes and virome datasets (including the >9,000 metagenoms described in __Pasolli et al., 2019__, and the screened viromes described in __Zolfo et al__, 2019)
 
-
-Then, `extract_contigs_from_vdb_report.py` reads the filtered contigs list and extracts the associated sequences in `FASTA` format.
+Finally, `extract_contigs_from_vdb_report.py` reads the filtered contigs list and extracts the associated sequences in `FASTA` format.
 
 ## Contigs Clustering ##
 
 WIP
 
-## Utility scripts ##
+## Utility data and scripts ##
 
 ### HPC Launchers 
 
-Internal Scripts to launch jobs on the PBS HPC cluster of the University of Trento are located in the `hpc_launchers` folder:
+Internal Scripts to launch jobs on the PBS HPC cluster of the University of Trento are named `*_launcher`. These scripts gradually submit jobs to the HPC cluster and tack the execution of each job.
 
-Scripts to build the ViromeDB from Virome-assembled-contigs
-```
-vdb_build_launcher.sh
-vdb_build_launch.sh
-```
-
-Launches Virome assembly on all samples of a folder
+examples are:
 
 ```
-launch_assembly_on_dataset.sh
+vdb_contig_filtering/hpc_launchers/vdb_build_launcher.sh
+vdb_contig_filtering/hpc_launchers/vdb_build_launch.sh
+vdb_assembly/launch_assembly_on_dataset.sh
 ```
-
 
 ### sequenceEdit.py
 
-edits FASTA and FASTQ files to modify Sequences IDs (e.g. to propagate metadata and information through the various step of the pipeline)
+Edits FASTA and FASTQ files to modify Sequences IDs (e.g. to propagate metadata and information through the various step of the pipeline)
 
 ### sequenceSplit.py
 
-creates a separate FASTA file for each entry of a bigger FASTA file 
+Creates a separate FASTA file for each entry of a bigger FASTA file 
+
+### split_and_sort2.py 
+
+Splits reads into `R1` and `R2` files, then checks intact read-pairs and puts singletons into `UP`. This ensures that all the quality-filtered reads are used to produce an assembly, and that unpaired reads are not discarded.
