@@ -4,6 +4,8 @@ i=$2;
 
 outfolder=$3;
 
+curDir=$(dirname $0);
+
 if [ $4 == '' ]; then
 	kingdom='Bacteria'
 else
@@ -33,12 +35,12 @@ for folder in $(ls -d ${prefix}/$i/reads/*); do
 			njshort=$(qstat -u moreno.zolfo | grep "short" | grep  "ASS4" | wc -l)
 
 			if [ $njshort -lt 30 ]; then
- 				qsub -q $queue -v assembler=\"${assembler}\",prokkaKingdom=\"${kingdom}\",prefix=\"${prefix}\",outFolder=\"${outfolder}\",datasetName=\"${v3}\",nproc=\"${nproc}\",sampleName=\"${sample}\",runName=\"${k}\" -N ASS4_${sample}_${k} -l select=1:ncpus=${nproc} /home/moreno.zolfo/assembly/assemble_sample.sh
+ 				qsub -q $queue -v assembler=\"${assembler}\",prokkaKingdom=\"${kingdom}\",prefix=\"${prefix}\",outFolder=\"${outfolder}\",datasetName=\"${v3}\",nproc=\"${nproc}\",sampleName=\"${sample}\",runName=\"${k}\" -N ASS4_${sample}_${k} -l select=1:ncpus=${nproc} ${curDir}/assemble_sample.sh
 			else
 				echo "Skip --> Reached Capacity"
 			fi;
 		else
-			echo "Skip	--> "/shares/CIBIO-Storage/CM/scratch/users/moreno.zolfo/virome_data/contigs_trimgal/${v3}/${sample}/${k}.fasta "exists!"
+			echo "Skip	--> "${outfolder}/${v3}/${sample}/${k}.fasta "exists!"
 		fi;
 		
 	done;
