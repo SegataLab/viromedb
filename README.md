@@ -4,7 +4,7 @@ The code organized in this repo recapitulates the computational steps for the as
 
 The code provided here is not optimized for universal use and is released for information and reproducibility puroposes only. This code cannot be run "as is" and needs to be adapted to your storage and computational architecture to be used.
 
-## Step 0: Virome Assembly ##
+## ▶ Step 0: Virome Assembly ##
 
 Viromes with a [ViromeQC](https://github.com/SegataLab/viromeqc) enrichment score > 50 are assembled into contigs and screened with this pipeline (`asemble_sample.sh`)
 
@@ -18,7 +18,7 @@ Viromes with a [ViromeQC](https://github.com/SegataLab/viromeqc) enrichment scor
 
 We use `launch_assembly_on_dataset.sh` to submit jobs to the HPC cluster.
 
-## Step 1: Contigs Mapping ##
+## ▶ Step 1: Contigs Mapping ##
 
 In this step, the assembled contigs are mapped against a list of interesting targets (e.g. known viruses, viral proteins...) and unwanted targets (e.g. bacterial genomes, MAGs)
 
@@ -51,7 +51,7 @@ For each contig and each database (i.e. NCBI80k, SGBs and RefSeq_Viral_Genomes),
 - The overall breadth of coverage is calculated by merging together all the hits that align on the contig. The script hence reports the overall breadth.
 
 
-## Step 2: Contigs Filtering ##
+## ▶ Step 2: Contigs Filtering ##
 
 This step of the pipeline uses `analyze_contigs.py` and `analyze_contigs_merge.py` to process the contigs assembled from viromes and to structure the data available in different files for each contig.
 
@@ -65,9 +65,15 @@ The resulting output is a (filtered) selection of all the assembled contigs, mer
 
 Finally, `extract_contigs_from_vdb_report.py` reads the filtered contigs list and extracts the associated sequences in `FASTA` format.
 
-## Step 3: Contigs Clustering ##
+## ▶ Step 3: Contigs Clustering ##
 
 This steps clusters the filtered contis, then runs a BLAST search on assembled metagenomes and viromes to retrieve homologues in there. The clustering is then performed again to produce multiple sequence alignments.
+
+1. Contigs from highly-enriched viromes are clustered with vsearch at 90% identity (i.e. **high enrinchment contigs**)
+2. Contigs are then mapped against metagenomes (n~=9000) and viromes (n~=3100) to find homologous sequences, producing an extended contigs repertoire (i.e. **extended contigs**)
+3. The extended contigs are then compared to the centroids of the initial clustering with mash. Contigs with a distance < 10% are kept.
+4. A second clustering is performed internally within each cluster, by adding the extended contigs to each cluster. Contigs that still fall in the same cluster of the **high enrinchment contigs** are kept. (i.e. **the final clusters**)
+5. Within each final cluster, only sequences with a length +/- 20% of the median length of thee cluster go through MSA and a phylogenetic tree is produced.
 
 *Documentation: Work in Progress*
 
