@@ -1,11 +1,24 @@
+#!/usr/bin/env python
+
 import pandas as pd
 import glob
 import sys
-etp=[]
-for e in glob.glob('/shares/CIBIO-Storage/CM/scratch/users/moreno.zolfo/virome_data/high_enrichment/new_mappings_new/*.csv'):
-	print(e)
-	a=pd.read_csv(e,sep='\t',header=0,low_memory=False)
-	etp.append(a)
-	
+import os
+import argparse
 
-pd.concat(etp).to_csv('/shares/CIBIO-Storage/CM/scratch/users/moreno.zolfo/virome_data/high_enrichment/new_mappings_new/all3.csv',sep='\t')
+etp=[]
+parser = argparse.ArgumentParser(description='')
+parser.add_argument('input_folder',help="folder with all the .csv files with the blasts analyzed by bread.py")
+parser.add_argument('output',help="output file")
+args = parser.parse_args()
+
+if os.path.isdir(args.input_folder):
+	for e in glob.glob(args.input_folder+'/*.csv'):
+		print(e)
+		a=pd.read_csv(e,sep='\t',header=0,low_memory=False)
+		etp.append(a)
+
+
+	pd.concat(etp).to_csv(args.output,sep='\t')
+else:
+	print("No dir found")

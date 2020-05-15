@@ -20,6 +20,8 @@ RASTIFY=True
 
 parser = argparse.ArgumentParser(description='')
 parser.add_argument('prefix')
+
+parser.add_argument('--refseq',action='store_true',help="this is a RefSeq contig: no need to check it as if it was a ViromeDB contig")
 parser.add_argument('filer',nargs='+')
 args = parser.parse_args()
 
@@ -188,8 +190,8 @@ def scatter_knowness(myContigs):
 contigFolder="/shares/CIBIO-Storage/CM/scratch/users/moreno.zolfo/virome_data/high_enrichment/contigs_tg/original/";
 prokkaFolder="/shares/CIBIO-Storage/CM/scratch/users/moreno.zolfo/virome_data/high_enrichment/contigs_tg/prokka";
 circularContigReport="/shares/CIBIO-Storage/CM/scratch/users/moreno.zolfo/virome_data/high_enrichment/circulars/all_report.circ.tsv"
-mappingsReport='/shares/CIBIO-Storage/CM/scratch/users/moreno.zolfo/virome_data/high_enrichment/new_mappings_new/all3.csv'
-metadataFile='/shares/CIBIO-Storage/CM/scratch/users/moreno.zolfo/virome_data/high_enrichment/metadata.met'
+mappingsReport='/shares/CIBIO-Storage/CM/scratch/users/moreno.zolfo/virome_data/high_enrichment/new_mappings_new/all4.csv'
+metadataFile='/shares/CIBIO-Storage/CM/scratch/users/moreno.zolfo/virome_data/viromedb/virome_metadata.txt'
 PFAMVFAMFolder='/shares/CIBIO-Storage/CM/scratch/users/moreno.zolfo/virome_data/high_enrichment/contigs_tg/mappings/pfam_vfam/'
 avaFile='/shares/CIBIO-Storage/CM/scratch/users/moreno.zolfo/virome_data/high_enrichment/ava/blast_ava_3_megablast_ws13_80pc_1000nt.csv'
 
@@ -254,6 +256,8 @@ for contigFile in args.filer:
 	print(contigFile)	
 	print (referenceName_bkc)
 
+	print ("AAA",referenceName_bkc)
+
 	ccode,enrichment,dataset,sample,run= referenceName_bkc.split('__')
 
 	##if dataset not in ['VLP_Lopez-Bueno_2009']: continue
@@ -266,18 +270,19 @@ for contigFile in args.filer:
 	#ERR2718568_102
 	VFAM19 = PFAMVFAMFolder+"/"+dataset+'__'+sample+'__'+run+'.vfam19.tbl'
 	vFam19Results = {}
-	for line in open(VFAM19):
-		if not line.startswith('#'):
-			l=line.strip().split()
-			family = l[0].replace('/tmp/MZ_VFAM/','').replace('refseq_91_protein.p_noDupes_minL1_s100_','')
-			locusTag = l[2]
-			evalue=l[4]
-			score=l[5]
-			if float(evalue) < 1e-5:
-				if locusTag not in vFam19Results:
-					vFam19Results[locusTag] = []
-				vFam19Results[locusTag].append((family,locusTag,evalue,score))
-			
+	if os.path.isfile(VFAM19):
+		for line in open(VFAM19):
+			if not line.startswith('#'):
+				l=line.strip().split()
+				family = l[0].replace('/tmp/MZ_VFAM/','').replace('refseq_91_protein.p_noDupes_minL1_s100_','')
+				locusTag = l[2]
+				evalue=l[4]
+				score=l[5]
+				if float(evalue) < 1e-5:
+					if locusTag not in vFam19Results:
+						vFam19Results[locusTag] = []
+					vFam19Results[locusTag].append((family,locusTag,evalue,score))
+				
 #	print ccode,enrichment,dataset,sample,run,contigsInFile
 	#sys.exit(0)
 	#contigsDB= {'ccode,enrichment,dataset,sample,run,'}
@@ -419,25 +424,25 @@ for contigFile in args.filer:
 			print ("working on ", len(pernode_allSGBs), "of ", z.id)
 
 			
-			#tmp_tracker={}
-			for othercontig,dat in pernode_allSGBs.items():
+			if not args.refseq:
+				for othercontig,dat in pernode_allSGBs.items():
 
-				#tmp_tracker[othercontig] = dat[5]
+					#tmp_tracker[othercontig] = dat[5]
 
-				if othercontig != z.id:
+					if othercontig != z.id:
 
-					if bestSGBID in [t for t,sta,end,leng,cleng in dat]:
-						otherContigsWithThisSGB+=1
-						len_of_otherContigsWithThisSGB+=int(othercontig.split('_')[3])
- 
-						#print (z.id,othercontig)
-						#print (dat)
-						#print (sum([ leng for t,sta,end,leng,cleng in dat if t == bestSGBID] ), [ cleng for t,sta,end,leng,cleng in dat if t == bestSGBID][0])
+						if bestSGBID in [t for t,sta,end,leng,cleng in dat]:
+							otherContigsWithThisSGB+=1
+							len_of_otherContigsWithThisSGB+=int(othercontig.split('_')[3])
+	 
+							#print (z.id,othercontig)
+							#print (dat)
+							#print (sum([ leng for t,sta,end,leng,cleng in dat if t == bestSGBID] ), [ cleng for t,sta,end,leng,cleng in dat if t == bestSGBID][0])
 
-						len_of_otherALNWithThisSGB += min(sum([ leng for t,sta,end,leng,cleng in dat if t == bestSGBID] ), [ cleng for t,sta,end,leng,cleng in dat if t == bestSGBID][0]  )
-						#del matching_region
+							len_of_otherALNWithThisSGB += min(sum([ leng for t,sta,end,leng,cleng in dat if t == bestSGBID] ), [ cleng for t,sta,end,leng,cleng in dat if t == bestSGBID][0]  )
+							#del matching_region
 
-							
+								
 
 
 			if z.id in pernode_allSamples:

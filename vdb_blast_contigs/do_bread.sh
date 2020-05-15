@@ -1,3 +1,11 @@
+#!/bin/bash
+
+VDB_MAIN_PATH="/shares/CIBIO-Storage/CM/scratch/users/moreno.zolfo/virome_data/viromedb/";
+DATA="/shares/CIBIO-Storage/CM/scratch/users/moreno.zolfo/virome_data/high_enrichment/contigs_tg/original/";
+
+export VDB_MAIN_PATH;
+export DATA;
+
 vtp="c7000-1__100__LiangG_2020__D3334__D3334
 c7001-1__100__LiangG_2020__D100__D100
 c7002-1__100__LiangG_2020__D101__D101
@@ -72,7 +80,9 @@ vtp="c7037-1__60__LiangG_2020__D3521__D3521
 c7041-1__67__LiangG_2020__D3684__D3684
 c7043-1__100__LiangG_2020__D3734__D3734"
 
-parallel -j 22 'i={}; python ./bread.py contigs_tg/original/${i}.ncbi.blast#NCBI80k#80#1000 contigs_tg/original/${i}.vir91.blast#RefSeq#80#500 contigs_tg/original/${i}.sgbs.blast#SGBS#80#1000 > new_mappings_new/${i}.csv' ::: $vtp;
+vtp="c8000-1__100__RefSeq__RefSeq__RefSeq"
+
+parallel -j 22 --env VDB_MAIN_PATH --env DATA 'i={}; ${VDB_MAIN_PATH}/vdb_blast_contigs/bread.py ${DATA}/${i}.ncbi.blast#NCBI80k#80#1000 ${DATA}/${i}.vir91.blast#RefSeq#80#500 ${DATA}/${i}.sgbs.blast#SGBS#80#1000 > ./${i}.csv' ::: $vtp;
 
 
 #c7037-1__60__LiangG_2020__D3521__D3521

@@ -1,7 +1,7 @@
 #!/bin/bash
 
 export VDB_MAIN_PATH="/shares/CIBIO-Storage/CM/scratch/users/moreno.zolfo/virome_data/viromedb/";
-export VIROMEDB_PROMISING_CONTIGS=$1;
+export VIROMEDB_PROMISING_CONTIGS=$1; #the blast DB
 export OUT_FOLDER=$2;
 
 if [ ! -d ${OUT_FOLDER} ]; then
