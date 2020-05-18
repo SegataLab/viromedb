@@ -6,7 +6,7 @@ from Bio import SeqIO
 
 parser = argparse.ArgumentParser()
 parser.add_argument('file',help='path to the filtered contigs file in CSV (e.g. out_toplen_filtered.csv)')
-parser.add_argument('--sgbs_folder',help='path to folder where the SGBs are', default="/shares/CIBIO-Storage/CM/scratch/users/e.pasolli/projects/binning/metabat/")
+parser.add_argument('--sgbs_folder',help='path to folder where the SGBs are', default="/shares/CIBIO-Storage/CM/news/users/e.pasolli/projects/binning/metabat/")
 
 args = parser.parse_args()
 
@@ -96,6 +96,7 @@ for fas,seqs in csseq.items():
 			 
 			
 toExtract={}
+errorfile = open('./extract_from_blasts_error.log','w')
 
 for k,v in TLP.items():
 	for k2,v2 in v.items():
@@ -105,15 +106,34 @@ for k,v in TLP.items():
 			dataset,sample,node = nodeSignature.split('__')
 			
 			filePointer = staFolder+'/'+dataset+'/'+sample+'/contigs_filtered.fasta.metabat-bins0/bin.unbinned.fasta'
-			unbinnedNodes2label[filePointer] = '__'.join([dataset,sample]) # '__'.join([dataset,sample,node])
-			
-			
-			if filePointer not in toExtract:
-				toExtract[filePointer]=[node]
+
+			if (os.path.isfile(filePointer)):
+				unbinnedNodes2label[filePointer] = '__'.join([dataset,sample]) # '__'.join([dataset,sample,node])
+				errorfile.write('Including\t'+filePointer)
+				
+				if filePointer not in toExtract:
+					toExtract[filePointer]=[node]
+				else:
+					toExtract[filePointer].append(node)
 			else:
-				toExtract[filePointer].append(node)
+				staFolder='/shares/CIBIO-Storage/CM/scratch/users/e.pasolli/projects/binning/metabat/'
+				filePointer = staFolder+'/'+dataset+'/'+sample+'/contigs_filtered.fasta.metabat-bins0/bin.unbinned.fasta'
+				if (os.path.isfile(filePointer)):
+					unbinnedNodes2label[filePointer] = '__'.join([dataset,sample]) # '__'.join([dataset,sample,node])
+					errorfile.write('Including\t'+filePointer)
+				
+				
+					if filePointer not in toExtract:
+						toExtract[filePointer]=[node]
+					else:
+						toExtract[filePointer].append(node)
 
 
+				else:
+					errorfile.write('NotFound\t'+filePointer)
+					print('Excluding file '+ filePointer + ' that cannot be found!')
+
+errorfile.close()
 
 		
 

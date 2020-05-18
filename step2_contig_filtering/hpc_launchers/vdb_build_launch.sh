@@ -10,4 +10,4 @@ bnr=${bn//.orig.fna/.csv};
 curDir=$(realpath $(dirname $0));
 
 echo $bn;
-python ${curDir}/../analyze_contigs.py --refseq ${VDB_OUT_FOLDER}/${bnr} $fna;
+python ${VIROMEDB_FOLDER}/step2_contig_filtering/analyze_contigs.py --refseq ${VDB_OUT_FOLDER}/${bnr} $fna;

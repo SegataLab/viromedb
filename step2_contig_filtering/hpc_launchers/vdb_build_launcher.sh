@@ -26,7 +26,7 @@ while true; do
 		if [ ! -f ${VDB_OUT_FOLDER}/${bnd//.orig.fna/.csv} ]; then
 			if [ $b -lt 30 ]; then 
 
-			echo qsub -q short_cpuQ -v fna="${k}",VDB_OUT_FOLDER="${VDB_OUT_FOLDER}" -N VDB8_${bnd//.orig.fna/} -l select=1:ncpus=1 ${curDir}/vdb_build_launch.sh;
+			echo qsub -q short_cpuQ -v fna="${k}",VDB_OUT_FOLDER="${VDB_OUT_FOLDER}",VIROMEDB_FOLDER="${VIROMEDB_FOLDER}" -N VDB8_${bnd//.orig.fna/} -l select=1:ncpus=1 ${curDir}/vdb_build_launch.sh;
 
 			b=$((b+1));
 			bt=$((bt+1));
