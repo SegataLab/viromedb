@@ -160,12 +160,21 @@ myContigs['totalSGB'] = myContigs['samples_same_as_best']+myContigs['samples_not
 #thr_samples_notbest_unbinned = 50
 
 ############## LARGE THRESHOLDS ################
-thr_prev_hits_other_dataset_distinct = 1
-thr_other_contigs_w_this_SGB_ALN_length = 30000
+#thr_prev_hits_other_dataset_distinct = 1
+#thr_other_contigs_w_this_SGB_ALN_length = 30000
+#thr_samples_same_as_best = 30
+#thr_samples_notbest_binned_otherbin = 50
+#thr_samples_SGB_assigned_best_and_notbest = 50
+#thr_samples_notbest_unbinned = 20
+
+############## SUPER LARGE THRESHOLDS ################
+thr_prev_hits_other_dataset_distinct = 0
+thr_other_contigs_w_this_SGB_ALN_length = 50000
 thr_samples_same_as_best = 30
 thr_samples_notbest_binned_otherbin = 50
 thr_samples_SGB_assigned_best_and_notbest = 50
 thr_samples_notbest_unbinned = 20
+
 
 myContigs['prev_hits_other_dataset_distinct'] = myContigs['prev_hits_other_dataset_distinct'].replace('', np.nan).fillna(0)
 
