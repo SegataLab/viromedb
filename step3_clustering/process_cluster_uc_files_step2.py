@@ -10,6 +10,7 @@ parser = argparse.ArgumentParser()
 
 parser.add_argument('--input_folder', help='foo help')
 parser.add_argument('--output') 
+parser.add_argument('--debug',action='store_true') 
 parser.add_argument('--allcontigs',help="for_reclustering",nargs="+") 
 args = parser.parse_args()
 
@@ -21,8 +22,10 @@ for allcontigs_element in args.allcontigs:
 	contigs_seq_trace[allcontigs_element] =  SeqIO.to_dict(SeqIO.parse(allcontigs_element,'fasta'))
 
 contigBase = {}
+ccc=[]
+ddd=[]
 for filer in  glob.glob(args.input_folder+'/*.mash'):
-	print("Opening ",filer)
+	#print("Opening ",filer)
 	for line in open(filer):
 
 		pc,clust,dist,p,sketch = line.strip().split()
@@ -31,6 +34,18 @@ for filer in  glob.glob(args.input_folder+'/*.mash'):
 			contigBase[pc] = [(clusterID,float(dist))]
 		else:
 			contigBase[pc].append((clusterID,float(dist)))
+		ccc.append(clusterID)
+
+		if(clusterID == 'vsearch_c118'):
+			print("ZZZ",clusterID)
+
+if args.debug:
+	#print("contigs tracked:", len(contigBase.keys()))
+
+	ot=open('tmp1.log','w')
+	ot.write("\n".join(set(ccc)))
+	ot.close()
+	
 
 
 clusters={}
@@ -43,12 +58,20 @@ for k,v in contigBase.items():
 	else:
 		clusters[closestCluster].append(k)
 
+	if(k == 'vsearch_c118'):
+		print("BBB",k)
+		
+
 
 ##add back the original clusters
 
+#if args.debug:
+#	print("clusters tracked:", len(clusters.keys()))
 
 for k2,v2 in clusters.items():
-
+	if(v2 == 'vsearch_c118'):
+		print("AAA",v2)
+		sys.exit(0)
 	
 	v3 = list( originalClusters[originalClusters['clusterID'] == k2]['contig'])
 
@@ -76,7 +99,15 @@ for k2,v2 in clusters.items():
 
 
 	SeqIO.write(contigsInThisCluster,args.output+'/'+k2+'_full_cluster.fasta','fasta')
+	ddd.append(k2)
 
+if args.debug:
+	#print("contigs tracked:", len(contigBase.keys()))
+
+	ot=open('tmp2.log','w')
+	ot.write("\n".join(set(ddd)))
+	ot.close()
+	
 
 
 print (sum([len(x) for x in clusters.values()]))

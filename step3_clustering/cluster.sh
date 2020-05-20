@@ -2,16 +2,16 @@
 #prog=$1
 #flavour=$2
 
-VDB_MAIN_PATH="/shares/CIBIO-Storage/CM/scratch/users/moreno.zolfo/virome_data/viromedb/clustering/";
+VDB_MAIN_PATH="/shares/CIBIO-Storage/CM/scratch/users/moreno.zolfo/virome_data/viromedb/step3_clustering/";
 REFSEQ91=/shares/CIBIO-Storage/CM/news/users/moreno.zolfo/mzolfo_virome/indexes/REFSEQ_r91/refseq_91.fasta
 
 
-BASE=$1 #/shares/CIBIO-Storage/CM/scratch/users/moreno.zolfo/virome_data/high_enrichment_vs_all_contigs/
-CONTIG_TABLE=$2 #/shares/CIBIO-Storage/CM/scratch/users/moreno.zolfo/virome_data/high_enrichment/vdb8_results//out_toplen_filtered.csv
+BASE=$1 #/shares/CIBIO-Storage/CM/scratch/users/moreno.zolfo/virome_data/high_enrichment_vs_all_contigs_LT3/
+CONTIG_TABLE=$2 #/shares/CIBIO-Storage/CM/scratch/users/moreno.zolfo/virome_data/high_enrichment/vdb8_results/with_refseq/out_toplen_filtered_largethresholds.csv
 
 prog='vsearch'
 flavour='P'
-ncores=8;
+ncores=32;
 
 #SEEKER_FOLDER=/shares/CIBIO-Storage/CM/scratch/users/moreno.zolfo/virome_data/high_enrichment_vs_all_contigs/seeker_analysis;
 
@@ -77,11 +77,11 @@ if [ ! -d ${odir}/step1/centroids/ ]; then
 	mkdir -p ${odir}/step1/centroids/
 	${VDB_MAIN_PATH}/process_cluster_uc_files.py --label ${prog} ${odir}/step1/clusters90.uc ${odir}/step1/nr90.fasta ${odir}/step1/centroids/
 
-	ls ${odir}/step1/centroids/*.fasta | parallel -j ${ncores} --env ODIR 'fie={}; fiebn=$(basename $fie) ;echo "Mash against "${fiebn//.fasta/}; mash dist -d 0.1 -v 0.05 ${ODIR}/sequences_Q_R.msh ${fie} > ${ODIR}/step1/centroids/${fiebn//.fasta/.mash};'  
+	ls ${odir}/step1/centroids/*.fasta | parallel -j ${ncores} --env ODIR 'fie={}; fiebn=$(basename $fie) ;echo "Mash against "${fiebn//.fasta/}; mash dist -d 0.1 -v 0.05 ${ODIR}/sequences_Q_R_low.msh ${fie} > ${ODIR}/step1/centroids/${fiebn//.fasta/.mash};'  
 else
 	echo "    -> Mash output already found. Moving on"
 fi;
-
+ 
 
 if [ ! -d ${odir}/step2_clusters/ ]; then
 	mkdir -p ${odir}/step2_clusters/;
@@ -92,6 +92,7 @@ else
 	echo "    -> step2_clusters folder already found. Moving on"
 fi;
 
+
 echo "Step 3 - Reclustering "
 #if [ ! -d ${odir}/step3_clusters/ ]; then
 
@@ -99,11 +100,13 @@ echo "Step 3 - Reclustering "
 
 
 	export ODIR=${odir};
-	ls ${odir}/step2_clusters/*_full_cluster.fasta |  parallel -j ${ncores} --env ODIR 'st3_cluster={}; st3_cluster_basename_f=$(basename $st3_cluster); st3_cluster_basename=${st3_cluster_basename_f//_full_cluster/}; if [ ! -f ${ODIR}/step3_clusters/${st3_cluster_basename}_clusters90.uc ]; then echo "     | Clustering ${st3_cluster}"; /shares/CIBIO-Storage/CM/mir/tools/vsearch-2.13.6/bin/vsearch --cluster_fast ${st3_cluster} --threads 10 --id 0.7 --strand both --uc ${ODIR}/step3_clusters/${st3_cluster_basename}_clusters90.uc --maxseqlength 200000; fi;'
+	ls ${odir}/step2_clusters/*_full_cluster.fasta | parallel -j ${ncores} --env ODIR 'st3_cluster={}; st3_cluster_basename_f=$(basename $st3_cluster); st3_cluster_basename=${st3_cluster_basename_f//_full_cluster/}; if [ ! -f ${ODIR}/step3_clusters/${st3_cluster_basename}_clusters90.uc ]; then echo "     | Clustering ${st3_cluster}"; /shares/CIBIO-Storage/CM/mir/tools/vsearch-2.13.6/bin/vsearch --cluster_fast ${st3_cluster} --threads 16 --id 0.7 --strand both --uc ${ODIR}/step3_clusters/${st3_cluster_basename}_clusters90.uc --maxseqlength 200000; fi;'
 
 #else
 #	echo "    -> step3_clusters folder already found. Moving on"
 #fi;
+
+
  
 
 
@@ -121,8 +124,11 @@ mkdir -p ${odir}/step4_clusters/fnas
 
 if [ ! -f ${odir}/step4_clusters/united_clusters.csv ]; then
 	echo "Step 4 - Putting clusters in their final form"
-	${VDB_MAIN_PATH}/unify.py --original_filtered_contigs ${CONTIG_TABLE} --cluster_pipeline_folder ${odir} --cluster_pipeline_folder ${odir}/step3_clusters/  --refseq_file ${REFSEQ91} --percentile 50 --output_folder ${odir}/step4_clusters/ --strict
+	${VDB_MAIN_PATH}/unify.py --original_filtered_contigs ${CONTIG_TABLE} --cluster_pipeline_folder ${odir} --refseq_file ${REFSEQ91} --percentile 50 --output_folder ${odir}/step4_clusters/ --strict
 fi;
+
+
+exit;
 
 echo "Step 4 - TrimAl"
 ls ${odir}/step4_clusters/fnas/*.fna | parallel -j ${ncores} 'i={}; echo $i $(cat ${i//.fna/.aln} | grep ">" | wc -l) seqs; mafft --thread 2 $i > ${i//.fna/.aln}; trimal -gt 0.7 -cons 70 -in ${i//.fna/.aln} -out ${i//.fna/.trim};';
