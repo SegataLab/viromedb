@@ -6,11 +6,11 @@ The code provided here is not optimized for universal use and is released for in
 
 ## ▶ Step 0: Virome Assembly ##
 
-![](https://github.com/SegataLab/viromedb/blob/master/doc/img/vlp_viromes_1.jpg)
-
 Viromes with a [ViromeQC](https://github.com/SegataLab/viromeqc) enrichment score > 50 are assembled into contigs and screened with this pipeline (`asemble_sample.sh`)
 
-- Reads cleaned to remove low quality reads with Trim-Galore
+![](https://github.com/SegataLab/viromedb/blob/master/doc/img/vlp_viromes_1.jpg)
+
+- Reads are cleaned to remove low quality reads with Trim-Galore
 - Human hg19 removal (Bowtie2)
 - split-and-sort.py is used to recover read-pairs and put them in the correct order
 - Metagenomic assembly performed with (contigs longer than 500 bp are kept)
