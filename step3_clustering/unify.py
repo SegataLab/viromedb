@@ -17,11 +17,13 @@ from Bio.Alphabet import IUPAC
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--original_filtered_contigs') 
+parser.add_argument('--original_filtered_contigs_fna') 
 parser.add_argument('--cluster_pipeline_folder') 
 parser.add_argument('--refseq_file') 
 parser.add_argument('--percentile',default=70, type=int) 
 parser.add_argument('--output_folder') 
-parser.add_argument('--strict', action="store_true") 
+parser.add_argument('--strict', action="store_true", help="base the trimming on the majoritary length of contigs in the cluster") 
+parser.add_argument('--greedy', action="store_true", help="base the trimming on the original viromeDB contig") 
 parser.add_argument('--reinclude_refseq',help="Includes RefSeq matching contigs back in the clustering. Not needed if RefSeq contigs are already part of the initial cluster",action='store_true') 
 parser.add_argument('--debug', action='store_true') 
 
@@ -59,19 +61,27 @@ clusterPointer=0
 number_of_clusters=len(list(set(flpc['fullClusterID'])))
 
 for cluster in list(set(flpc['fullClusterID'])):
-	
-	clusterPointer+=1
-	
-	print(clusterPointer," / ",number_of_clusters, "\t: BEGINNING cluster ",cluster)
+	#print(cluster)
 
+	clusterPointer+=1
+	print(clusterPointer," / ",number_of_clusters, "\t: BEGINNING cluster ",cluster)
+	
+	# if Multi Cluster, take the sequence from the step3 clustering. Otherwise use the sequence from the first step
+	# (no need to "recluster" a singleton cluster, after all!)
 	if "__" in cluster:
 		clusterSequencesFile = args.cluster_pipeline_folder+'/step3_clusters/fnas/'+cluster+'.fna'
+		seqsInCluster = [ _ for _ in SeqIO.parse(clusterSequencesFile,'fasta')]
 	else:
-		clusterSequencesFile = args.cluster_pipeline_folder+'/step1/centroids/'+cluster+'.fasta'
 
+		clusterSequencesFile = args.original_filtered_contigs_fna
+		targetSeqs = list(set( flpc[flpc['fullClusterID'] == cluster]['contig'] )) 
+		seqsInCluster = [ _ for _ in SeqIO.parse(args.original_filtered_contigs_fna,'fasta') if _.id in targetSeqs ]
+		
 
-	seqsInCluster = [ _ for _ in SeqIO.parse(clusterSequencesFile,'fasta')]
+	#This contains all the sequences in this cluster
+	
 
+	#here there are the Ref. Genomes from RefSeq that match to any of the viromeDB original clusters
 	repGenomes=flpc[flpc['fullClusterID'] == cluster]['RefSeq_besthit_what'].dropna().unique()
 	viromeContigsHere=flpc[flpc['fullClusterID'] == cluster]['contig'].dropna().unique()
 
@@ -89,9 +99,20 @@ for cluster in list(set(flpc['fullClusterID'])):
 
 
 	if args.strict:
-		remaining_seqs=[x for x in seqsInCluster if ( len(x.seq) >= percentile_median_length_of_cluster*0.75) and (len(x.seq) <= percentile_median_length_of_cluster*1.25)  ]
+		length_limits=(percentile_median_length_of_cluster*0.75,percentile_median_length_of_cluster*1.25)
+		remaining_seqs=[x for x in seqsInCluster if ( ( len(x.seq) >= length_limits[0]) and (len(x.seq) <= length_limits[1]) ) ]
+	
+	#redefine things a little bit: base the trimming only on the ViromeDB seqs
+	elif args.greedy:
+
+		lengths_in_cluster=[len(_.seq) for _ in seqsInCluster if _.id in viromeContigsHere]
+		print(lengths_in_cluster)
+		percentile_median_length_of_cluster = np.percentile(lengths_in_cluster,args.percentile)
+		length_limits=(percentile_median_length_of_cluster*0.85,percentile_median_length_of_cluster*1.15)
+		remaining_seqs=[x for x in seqsInCluster if ( ( len(x.seq) >= length_limits[0]) and (len(x.seq) <= length_limits[1]) ) or x.id in viromeContigsHere]
 	else:
-		remaining_seqs=[x for x in seqsInCluster if ( ( len(x.seq) >= percentile_median_length_of_cluster*0.75) and (len(x.seq) <= percentile_median_length_of_cluster*1.25) ) or x.id in viromeContigsHere or x.id in repGenomesList]
+		length_limits=(percentile_median_length_of_cluster*0.75,percentile_median_length_of_cluster*1.25)
+		remaining_seqs=[x for x in seqsInCluster if ( ( len(x.seq) >= length_limits[0]) and (len(x.seq) <= length_limits[1]) ) or x.id in viromeContigsHere or x.id in repGenomesList]
 	
 
 	if len(remaining_seqs) == 0:
@@ -101,7 +122,7 @@ for cluster in list(set(flpc['fullClusterID'])):
 
 	remaining_seqs_ids=[_.id for _ in remaining_seqs]
 
-	print ('\t',len(seqsInCluster),' seqs, of which ', len(remaining_seqs),' have: ',percentile_median_length_of_cluster*.75,' < length < ', percentile_median_length_of_cluster*1.25)
+	print ('\t',len(seqsInCluster),' seqs, of which ', len(remaining_seqs),' have: ',length_limits[0],' <= length <= ', length_limits[1])
 
  
 
@@ -179,7 +200,7 @@ for cluster in list(set(flpc['fullClusterID'])):
 		finalContigsForTheCluster.append(seqToCheck)
 	
 	#write
-	
+
 	print("\t",cluster, len(finalContigsForTheCluster),' final contigs', len(contigs_to_flip),' seqs to flip' ) 
 	clusterInfos.append({'fullClusterID': cluster,'tree_contigs': len(finalContigsForTheCluster), 'flippedContigs': len(contigs_to_flip)})
 	SeqIO.write(finalContigsForTheCluster,args.output_folder+'/fnas/'+cluster+'.fna','fasta')

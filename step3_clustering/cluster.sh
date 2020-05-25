@@ -11,7 +11,7 @@ CONTIG_TABLE=$2 #/shares/CIBIO-Storage/CM/scratch/users/moreno.zolfo/virome_data
 
 prog='vsearch'
 flavour='P'
-ncores=32;
+ncores=50;
 
 #SEEKER_FOLDER=/shares/CIBIO-Storage/CM/scratch/users/moreno.zolfo/virome_data/high_enrichment_vs_all_contigs/seeker_analysis;
 
@@ -93,8 +93,8 @@ else
 fi;
 
 
-echo "Step 3 - Reclustering "
-#if [ ! -d ${odir}/step3_clusters/ ]; then
+echo "Step 3 - Reclustering at 70% (for TREEs) "
+if [ ! -d ${odir}/step3_clusters/fnas ]; then
 
 	mkdir -p ${odir}/step3_clusters/fnas/
 
@@ -102,21 +102,19 @@ echo "Step 3 - Reclustering "
 	export ODIR=${odir};
 	ls ${odir}/step2_clusters/*_full_cluster.fasta | parallel -j ${ncores} --env ODIR 'st3_cluster={}; st3_cluster_basename_f=$(basename $st3_cluster); st3_cluster_basename=${st3_cluster_basename_f//_full_cluster/}; if [ ! -f ${ODIR}/step3_clusters/${st3_cluster_basename}_clusters90.uc ]; then echo "     | Clustering ${st3_cluster}"; /shares/CIBIO-Storage/CM/mir/tools/vsearch-2.13.6/bin/vsearch --cluster_fast ${st3_cluster} --threads 16 --id 0.7 --strand both --uc ${ODIR}/step3_clusters/${st3_cluster_basename}_clusters90.uc --maxseqlength 200000; fi;'
 
-#else
-#	echo "    -> step3_clusters folder already found. Moving on"
-#fi;
-
-
- 
+else
+	echo "    -> step3_clusters are already in place! Moving on"
+fi;
 
 
 if [ ! -f ${odir}/step3_clusters/clusters_step3.tsv ]; then
 	echo "Done! Now merging Step 3"
 	${VDB_MAIN_PATH}/process_cluster_uc_files_step3.py --step3_folder ${odir}/step3_clusters/ --vdb_contigs ${odir}/step2_clusters/clusters_step2.tsv --allcontigs ${BASE}/against_sgbs/sequences.fna ${BASE}/against_viromes/sequences.fna ${BASE}/promising_contigs.fna
+else
+	echo "    -> Step3 clusters are already merged. Moving on"
 fi;
 
 
-#echo python3 ./process_cluster_uc_files_step3.py --step3_folder ${odir}/step3_clusters/ --vdb_contigs ${odir}/step2_clusters/clusters_step2.tsv --allcontigs ../against_sgbs/sequences.fna ../against_viromes/sequences.fna ../promising_contigs.fna --allseeker ${SEEKER_FOLDER}/Q_seqs.predict.txt ${SEEKER_FOLDER}/R_seqs.predict.txt ${SEEKER_FOLDER}/promising_contigs.predict.txt
 
 mkdir -p ${odir}/step4_clusters/
 mkdir -p ${odir}/step4_clusters/fnas
@@ -124,17 +122,30 @@ mkdir -p ${odir}/step4_clusters/fnas
 
 if [ ! -f ${odir}/step4_clusters/united_clusters.csv ]; then
 	echo "Step 4 - Putting clusters in their final form"
-	${VDB_MAIN_PATH}/unify.py --original_filtered_contigs ${CONTIG_TABLE} --cluster_pipeline_folder ${odir} --refseq_file ${REFSEQ91} --percentile 50 --output_folder ${odir}/step4_clusters/ --strict
+	${VDB_MAIN_PATH}/unify.py --original_filtered_contigs ${CONTIG_TABLE} --original_filtered_contigs_fna ${BASE}/promising_contigs.fna --cluster_pipeline_folder ${odir} --refseq_file ${REFSEQ91} --percentile 50 --output_folder ${odir}/step4_clusters/ --strict
 fi;
 
 
-exit;
 
-echo "Step 4 - TrimAl"
-ls ${odir}/step4_clusters/fnas/*.fna | parallel -j ${ncores} 'i={}; echo $i $(cat ${i//.fna/.aln} | grep ">" | wc -l) seqs; mafft --thread 2 $i > ${i//.fna/.aln}; trimal -gt 0.7 -cons 70 -in ${i//.fna/.aln} -out ${i//.fna/.trim};';
+if [ ! -f ${odir}/step4_clusters_greedy/united_clusters.csv ]; then
 
-echo "Step 4 - Trees"
-mkdir -p ${odir}/step4_clusters/trees/
-ls ${odir}/step4_clusters/fnas/*.trim | parallel -j 8 --env odir 'i={}; bn=$(basename $i); echo ${i}; raxmlHPC-PTHREADS-SSE3 -m GTRGAMMA -p 12345 -# 10 -s ${i} -n ${bn//.trim/} -T 4 -w $(realpath ${odir})/step4_clusters/trees/';
+	mkdir -p ${odir}/step4_clusters_greedy_2/
+	mkdir -p ${odir}/step4_clusters_greedy_2/fnas
+	echo "Step 4B - Putting clusters in their final form (GREEDY MODE)"
+	${VDB_MAIN_PATH}/unify.py --original_filtered_contigs ${CONTIG_TABLE} --original_filtered_contigs_fna ${BASE}/promising_contigs.fna --cluster_pipeline_folder ${odir} --refseq_file ${REFSEQ91} --percentile 50 --output_folder ${odir}/step4_clusters_greedy_2/ --greedy
+fi;
+
+if [ ! -d ${odir}/step4_clusters_greedy/rep_fnas/ ]; then
+	echo "Step 4C - Putting clusters in their final form (GREEDY MODE)"
+	mkdir -p ${odir}/step4_clusters_greedy/rep_fnas/
+
+	export ODIR=${odir};
+	ls ${odir}/step4_clusters_greedy/fnas/*.fna | grep -v "__" | parallel -j ${ncores} --env ODIR 'st4_cluster={}; st4_cluster_basename_f=$(basename $st4_cluster); st4_cluster_basename=${st4_cluster_basename_f//.fna/}; if [ ! -f ${ODIR}/step4_clusters_greedy/clusters/${st4_cluster_basename}_clusters90.uc ]; then echo "     | Clustering ${st4_cluster}" $(cat $st4_cluster | grep ">" | wc -l); /shares/CIBIO-Storage/CM/mir/tools/vsearch-2.13.6/bin/vsearch --cluster_fast ${st4_cluster} --threads 4 --id 0.95 --strand both --uc ${ODIR}/step4_clusters_greedy/rep_fnas/${st4_cluster_basename}_clusters95.uc --maxseqlength 200000; fi;'
+	${VDB_MAIN_PATH}/process_3rd_cluster_uc_files_step4c.py --step4_folder ${odir}/step4_clusters_greedy/ --vdb_contigs ${odir}/step4_clusters_greedy/united_clusters.csv
+fi;
 
 
+echo "Step 5 - Trees"
+export ODIR=${odir};
+export VDB_MAIN_PATH=${VDB_MAIN_PATH};
+ls ${odir}/step4_clusters_greedy/fnas/*.fna | parallel -j ${ncores} --env ODIR --env VDB_MAIN_PATH '${VDB_MAIN_PATH}/tree.sh {} ${ODIR}' ;
