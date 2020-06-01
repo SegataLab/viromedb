@@ -4,14 +4,21 @@
 
 VDB_MAIN_PATH="/shares/CIBIO-Storage/CM/scratch/users/moreno.zolfo/virome_data/viromedb/step3_clustering/";
 REFSEQ91=/shares/CIBIO-Storage/CM/news/users/moreno.zolfo/mzolfo_virome/indexes/REFSEQ_r91/refseq_91.fasta
+#BASE=/shares/CIBIO-Storage/CM/scratch/users/moreno.zolfo/virome_data/high_enrichment_vs_all_contigs_LT3/
+#CONTIG_TABLE=/shares/CIBIO-Storage/CM/scratch/users/moreno.zolfo/virome_data/high_enrichment/vdb8_results/with_refseq/
 
 
-BASE=$1 #/shares/CIBIO-Storage/CM/scratch/users/moreno.zolfo/virome_data/high_enrichment_vs_all_contigs_LT3/
-CONTIG_TABLE=$2 #/shares/CIBIO-Storage/CM/scratch/users/moreno.zolfo/virome_data/high_enrichment/vdb8_results/with_refseq/out_toplen_filtered_largethresholds.csv
+CONTIG_TABLE=/shares/CIBIO-Storage/CM/scratch/users/moreno.zolfo/virome_data/high_enrichment/vdb9/res/out_toplen_filtered_largethresholds.csv
+BASE=/shares/CIBIO-Storage/CM/scratch/users/moreno.zolfo/virome_data/high_enrichment_vs_all_contigs_LT5/
 
 prog='vsearch'
 flavour='P'
 ncores=50;
+
+BASE=$1 #/shares/CIBIO-Storage/CM/scratch/users/moreno.zolfo/virome_data/high_enrichment_vs_all_contigs_LT3/
+CONTIG_TABLE=$2 #/shares/CIBIO-Storage/CM/scratch/users/moreno.zolfo/virome_data/high_enrichment/vdb8_results/with_refseq/out_toplen_filtered_largethresholds.csv
+
+
 
 #SEEKER_FOLDER=/shares/CIBIO-Storage/CM/scratch/users/moreno.zolfo/virome_data/high_enrichment_vs_all_contigs/seeker_analysis;
 
@@ -77,7 +84,7 @@ if [ ! -d ${odir}/step1/centroids/ ]; then
 	mkdir -p ${odir}/step1/centroids/
 	${VDB_MAIN_PATH}/process_cluster_uc_files.py --label ${prog} ${odir}/step1/clusters90.uc ${odir}/step1/nr90.fasta ${odir}/step1/centroids/
 
-	ls ${odir}/step1/centroids/*.fasta | parallel -j ${ncores} --env ODIR 'fie={}; fiebn=$(basename $fie) ;echo "Mash against "${fiebn//.fasta/}; mash dist -d 0.1 -v 0.05 ${ODIR}/sequences_Q_R_low.msh ${fie} > ${ODIR}/step1/centroids/${fiebn//.fasta/.mash};'  
+	ls ${odir}/step1/centroids/*.fasta | parallel -j ${ncores} --env ODIR 'fie={}; fiebn=$(basename $fie) ;echo "Mash against "${fiebn//.fasta/}; mash dist -d 0.1 -v 0.05 ${ODIR}/sequences_Q_R.msh ${fie} > ${ODIR}/step1/centroids/${fiebn//.fasta/.mash};'  
 else
 	echo "    -> Mash output already found. Moving on"
 fi;
@@ -100,7 +107,7 @@ if [ ! -d ${odir}/step3_clusters/fnas ]; then
 
 
 	export ODIR=${odir};
-	ls ${odir}/step2_clusters/*_full_cluster.fasta | parallel -j ${ncores} --env ODIR 'st3_cluster={}; st3_cluster_basename_f=$(basename $st3_cluster); st3_cluster_basename=${st3_cluster_basename_f//_full_cluster/}; if [ ! -f ${ODIR}/step3_clusters/${st3_cluster_basename}_clusters90.uc ]; then echo "     | Clustering ${st3_cluster}"; /shares/CIBIO-Storage/CM/mir/tools/vsearch-2.13.6/bin/vsearch --cluster_fast ${st3_cluster} --threads 16 --id 0.7 --strand both --uc ${ODIR}/step3_clusters/${st3_cluster_basename}_clusters90.uc --maxseqlength 200000; fi;'
+	ls ${odir}/step2_clusters/*_full_cluster.fasta | parallel -j ${ncores} --env ODIR 'st3_cluster={}; st3_cluster_basename_f=$(basename $st3_cluster); st3_cluster_basename=${st3_cluster_basename_f//_full_cluster/}; if [ ! -f ${ODIR}/step3_clusters/${st3_cluster_basename}_clusters90.uc ]; then echo "     | Clustering ${st3_cluster}"; /shares/CIBIO-Storage/CM/mir/tools/vsearch-2.13.6/bin/vsearch --cluster_fast ${st3_cluster} --threads 16 --id 0.7 --strand both --uc ${ODIR}/step3_clusters/${st3_cluster_basename}_clusters90.uc --maxseqlength 250000; fi;'
 
 else
 	echo "    -> step3_clusters are already in place! Moving on"
@@ -116,36 +123,42 @@ fi;
 
 
 
-mkdir -p ${odir}/step4_clusters/
-mkdir -p ${odir}/step4_clusters/fnas
 
+
+#
+#if [ ! -f ${odir}/step4_clusters/united_clusters.csv ]; then
+#	echo "Step 4 - Putting clusters in their final form"
+#	${VDB_MAIN_PATH}/unify.py --original_filtered_contigs ${CONTIG_TABLE} --original_filtered_contigs_fna ${BASE}/promising_contigs.fna --cluster_pipeline_folder ${odir} --refseq_file ${REFSEQ91} --percentile 50 --output_folder ${odir}/step4_clusters/ --strict
+#fi;
+
+
+
+#REPR_SELECTION_FOR_INDEX
 
 if [ ! -f ${odir}/step4_clusters/united_clusters.csv ]; then
-	echo "Step 4 - Putting clusters in their final form"
-	${VDB_MAIN_PATH}/unify.py --original_filtered_contigs ${CONTIG_TABLE} --original_filtered_contigs_fna ${BASE}/promising_contigs.fna --cluster_pipeline_folder ${odir} --refseq_file ${REFSEQ91} --percentile 50 --output_folder ${odir}/step4_clusters/ --strict
-fi;
 
-
-
-if [ ! -f ${odir}/step4_clusters_greedy/united_clusters.csv ]; then
-
-	mkdir -p ${odir}/step4_clusters_greedy_2/
-	mkdir -p ${odir}/step4_clusters_greedy_2/fnas
-	echo "Step 4B - Putting clusters in their final form (GREEDY MODE)"
-	${VDB_MAIN_PATH}/unify.py --original_filtered_contigs ${CONTIG_TABLE} --original_filtered_contigs_fna ${BASE}/promising_contigs.fna --cluster_pipeline_folder ${odir} --refseq_file ${REFSEQ91} --percentile 50 --output_folder ${odir}/step4_clusters_greedy_2/ --greedy
-fi;
-
-if [ ! -d ${odir}/step4_clusters_greedy/rep_fnas/ ]; then
-	echo "Step 4C - Putting clusters in their final form (GREEDY MODE)"
-	mkdir -p ${odir}/step4_clusters_greedy/rep_fnas/
+	mkdir -p ${odir}/step4_clusters/
+	mkdir -p ${odir}/step4_clusters/fnas
+	mkdir -p ${odir}/step4_clusters/rep_fnas/
+	echo "Step 4B - Putting clusters in their final form (NO TRIM)"
+	${VDB_MAIN_PATH}/unify.py --original_filtered_contigs ${CONTIG_TABLE} --original_filtered_contigs_fna ${BASE}/promising_contigs.fna --cluster_pipeline_folder ${odir} --output_folder ${odir}/step4_clusters/ --notrim
 
 	export ODIR=${odir};
-	ls ${odir}/step4_clusters_greedy/fnas/*.fna | grep -v "__" | parallel -j ${ncores} --env ODIR 'st4_cluster={}; st4_cluster_basename_f=$(basename $st4_cluster); st4_cluster_basename=${st4_cluster_basename_f//.fna/}; if [ ! -f ${ODIR}/step4_clusters_greedy/clusters/${st4_cluster_basename}_clusters90.uc ]; then echo "     | Clustering ${st4_cluster}" $(cat $st4_cluster | grep ">" | wc -l); /shares/CIBIO-Storage/CM/mir/tools/vsearch-2.13.6/bin/vsearch --cluster_fast ${st4_cluster} --threads 4 --id 0.95 --strand both --uc ${ODIR}/step4_clusters_greedy/rep_fnas/${st4_cluster_basename}_clusters95.uc --maxseqlength 200000; fi;'
-	${VDB_MAIN_PATH}/process_3rd_cluster_uc_files_step4c.py --step4_folder ${odir}/step4_clusters_greedy/ --vdb_contigs ${odir}/step4_clusters_greedy/united_clusters.csv
+	ls ${odir}/step4_clusters/fnas/*.fna | parallel -j ${ncores} --env ODIR 'st4_cluster={}; st4_cluster_basename_f=$(basename $st4_cluster); st4_cluster_basename=${st4_cluster_basename_f//.fna/}; if [ ! -f ${ODIR}/step4_clusters/clusters/${st4_cluster_basename}_clusters90.uc ]; then echo "     | Clustering ${st4_cluster}" $(cat $st4_cluster | grep ">" | wc -l); /shares/CIBIO-Storage/CM/mir/tools/vsearch-2.13.6/bin/vsearch --cluster_fast ${st4_cluster} --threads 2 --id 0.95 --strand both --uc ${ODIR}/step4_clusters/rep_fnas/${st4_cluster_basename}_clusters95.uc --maxseqlength 250000; fi;'
+	${VDB_MAIN_PATH}/process_3rd_cluster_uc_files_step4c.py --step4_folder ${odir}/step4_clusters/ --vdb_contigs ${odir}/step4_clusters/united_clusters.csv
 fi;
 
+#TREE_SELECTION
+
+if [ ! -f ${odir}/step4_clusters_trimmed/united_clusters.csv ]; then
+
+	mkdir -p ${odir}/step4_clusters_trimmed/
+	mkdir -p ${odir}/step4_clusters_trimmed/fnas
+	echo "Step 4B - Putting clusters in their final form (GREEDY MODE)"
+	${VDB_MAIN_PATH}/unify.py --original_filtered_contigs ${CONTIG_TABLE} --original_filtered_contigs_fna ${BASE}/promising_contigs.fna --cluster_pipeline_folder ${odir} --percentile 50 --output_folder ${odir}/step4_clusters_trimmed/
+fi;
 
 echo "Step 5 - Trees"
 export ODIR=${odir};
 export VDB_MAIN_PATH=${VDB_MAIN_PATH};
-ls ${odir}/step4_clusters_greedy/fnas/*.fna | parallel -j ${ncores} --env ODIR --env VDB_MAIN_PATH '${VDB_MAIN_PATH}/tree.sh {} ${ODIR}' ;
+ls ${odir}/step4_clusters_trimmed/fnas/*.fna | parallel -j ${ncores} --env ODIR --env VDB_MAIN_PATH '${VDB_MAIN_PATH}/tree.sh {} ${ODIR}';

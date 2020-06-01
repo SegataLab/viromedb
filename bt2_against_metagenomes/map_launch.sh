@@ -137,7 +137,7 @@ while true; do
 				touch ${odir}/${dataset}/vdbm__${dataset}__${sample}.wk
 				b_short=$((b_short+1));
 				bt=$((bt+1));
-			elif [ $b_common -lt 40 ]; then 
+			elif [ $b_common -lt 50 ]; then 
 				#echo "L" ${odir}/${dataset}/vdbm__${dataset}__${sample}.wk
 				qsub -q common_cpuQ -v prefix=\"${base}\",outDir=\"${odirE}\",dataset=\"${dataset}\",sample=\"${sample}\",uncompress_cmd=\"${extraction_cmd}\",extension=\"${extension}\" -N VDBM_${dataset}_${sample} -l select=1:ncpus=2 ${curDir}/map_bt2.sh;
 				touch ${odir}/${dataset}/vdbm__${dataset}__${sample}.wk

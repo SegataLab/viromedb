@@ -255,9 +255,7 @@ for contigFile in args.filer:
 	
 	print(contigFile)	
 	print (referenceName_bkc)
-
-	print ("AAA",referenceName_bkc)
-
+ 
 	ccode,enrichment,dataset,sample,run= referenceName_bkc.split('__')
 
 	##if dataset not in ['VLP_Lopez-Bueno_2009']: continue
@@ -271,13 +269,16 @@ for contigFile in args.filer:
 	VFAM19 = PFAMVFAMFolder+"/"+dataset+'__'+sample+'__'+run+'.vfam19.tbl'
 	vFam19Results = {}
 	if os.path.isfile(VFAM19):
+		print("VFAM19:",VFAM19)
 		for line in open(VFAM19):
+
 			if not line.startswith('#'):
 				l=line.strip().split()
 				family = l[0].replace('/tmp/MZ_VFAM/','').replace('refseq_91_protein.p_noDupes_minL1_s100_','')
 				locusTag = l[2]
 				evalue=l[4]
 				score=l[5]
+
 				if float(evalue) < 1e-5:
 					if locusTag not in vFam19Results:
 						vFam19Results[locusTag] = []
@@ -364,6 +365,7 @@ for contigFile in args.filer:
 		for SGBmappingFile_UNK_line in open(SGBmappingFile_UNBINNED):
 
 			qseqid,sseqid,pident,length,mismatch,gapopen,qstart,qend,sstart,send,evalue,bitscore,qlen,slen = SGBmappingFile_UNK_line.strip().split()
+
 			if float(pident) < 80 or int(length) < 1000: continue
 				
 					 
@@ -374,7 +376,9 @@ for contigFile in args.filer:
 				sgb_dataset,sgb_sample,sgb_bin,sgd_ID,sgb_node = sseqid.split('__')
 
 			sampleSignature = '_'.join([sgb_dataset,sgb_sample])	
+
 			
+
 			if sgd_ID == 'ND' and sgb_bin == 'UNBINNED':
 				sgd_ID = 'unbinned_'+sampleSignature
 			elif sgd_ID == 'ND' and sgb_bin != 'UNBINNED':
@@ -386,10 +390,11 @@ for contigFile in args.filer:
 
 
 
+
 			if qseqid not in pernode_allSamples:
 				pernode_allSamples[qseqid] = [ (sampleSignature,sgd_ID) ]
 			else:
-				pernode_allSamples[qseqid].append( (sampleSignature,sgd_ID) )
+				pernode_allSamples[qseqid].append( (sampleSignature,sgd_ID) ) 
 		
 
 		print ("BLAST2 file OK")
@@ -403,11 +408,8 @@ for contigFile in args.filer:
 			print ("ERROR! Error in contig-prokka parsing",e[0],z.id,len(z.seq))
 			fna2prokka[e[1]]=''
 
-		#	print ccode+'_'+z.id
-			
-				#print ava[ccode+'_'+z.id]
-				#print {'contig_id': z.id, 'cCode':ccode,'enrichment':enrichment,'dataset':dataset,'sample':sample,'run':run, 'contig_len':len(z.seq), 'prokka_id' : e[1] } 
-				
+
+
 			
 
 		bestSGBID = None
@@ -417,6 +419,7 @@ for contigFile in args.filer:
 
 		samplesTracker = {'samples_same_as_best':[],'samples_notbest_lone_genome':[],'samples_notbest_unbinned':[],'samples_notbest_LQ_genome':[],'samples_notbest_binned_otherbin':[],'samples_total_unbinned':[]}
 
+		bestSGBID=''
 		if z.id in pernode_bestSGB:
 
 
@@ -442,34 +445,32 @@ for contigFile in args.filer:
 							len_of_otherALNWithThisSGB += min(sum([ leng for t,sta,end,leng,cleng in dat if t == bestSGBID] ), [ cleng for t,sta,end,leng,cleng in dat if t == bestSGBID][0]  )
 							#del matching_region
 
-								
+		if z.id in pernode_allSamples:
+
+			for sampleSign,sgbID in pernode_allSamples[z.id]:
+				
+ 
+				
+				if sgbID == bestSGBID:
+					dest='samples_same_as_best'
+				elif sgbID != bestSGBID and 'lone_genome' in sgbID:
+					dest='samples_notbest_lone_genome' 
+				elif sgbID != bestSGBID and 'unbinned' in sgbID:
+					dest='samples_notbest_unbinned' 
+				elif sgbID != bestSGBID and 'LQ_genome' in sgbID:
+					dest='samples_notbest_LQ_genome'
+				else:
+					dest='samples_notbest_binned_otherbin'
 
 
-			if z.id in pernode_allSamples:
-				for sampleSign,sgbID in pernode_allSamples[z.id]:
+				
+				if sampleSign not in samplesTracker[dest]:
+					samplesTracker[dest].append(sampleSign)
 
-					#print sampleSign,sgbID,bestSGBID
-
-					if sgbID == bestSGBID:
-						dest='samples_same_as_best'
-					elif sgbID != bestSGBID and 'lone_genome' in sgbID:
-						dest='samples_notbest_lone_genome' 
-					elif sgbID != bestSGBID and 'unbinned' in sgbID:
-						dest='samples_notbest_unbinned' 
-					elif sgbID != bestSGBID and 'LQ_genome' in sgbID:
-						dest='samples_notbest_LQ_genome'
-					else:
-						dest='samples_notbest_binned_otherbin'
-
-
-					
-					if sampleSign not in samplesTracker[dest]:
-						samplesTracker[dest].append(sampleSign)
-
-					if 'unbinned' in sgbID:
-						dest='samples_total_unbinned'
-					if sampleSign not in samplesTracker[dest]:
-						samplesTracker[dest].append(sampleSign)
+				if 'unbinned' in sgbID:
+					dest='samples_total_unbinned'
+				if sampleSign not in samplesTracker[dest]:
+					samplesTracker[dest].append(sampleSign)
 
 
 
@@ -504,7 +505,7 @@ for contigFile in args.filer:
 
 
 	in_handle = open(gffFile)
-	print ("Starting GFF")
+	print ("Starting GFF",gffFile)
 
 	for rec in GFF.parse(in_handle):
 		#print (rec.id,fna2prokka[rec.id])

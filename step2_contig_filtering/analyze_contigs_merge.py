@@ -140,7 +140,6 @@ myContigs=pd.merge(myContigs,pd.read_table(metadataFile,header=0,low_memory=Fals
 
 print ("FINAL")
 
-print (myContigs.columns)
 print (myContigs.shape)
 
 
@@ -167,20 +166,37 @@ myContigs['totalSGB'] = myContigs['samples_same_as_best']+myContigs['samples_not
 #thr_samples_SGB_assigned_best_and_notbest = 50
 #thr_samples_notbest_unbinned = 20
 
-############## SUPER LARGE THRESHOLDS ################
+############## LARGE THRESHOLDS2 VDB 8 ################
+#thr_prev_hits_other_dataset_distinct = 0
+#thr_other_contigs_w_this_SGB_ALN_length = 50000
+#thr_samples_same_as_best = 30
+#thr_samples_notbest_binned_otherbin = 50
+#thr_samples_SGB_assigned_best_and_notbest = 50
+#thr_samples_notbest_unbinned = 20
+#thr_minlen=0
+
+
+############## LARGE THRESHOLDS2 VDB 9 ################
 thr_prev_hits_other_dataset_distinct = 0
-thr_other_contigs_w_this_SGB_ALN_length = 50000
+thr_other_contigs_w_this_SGB_ALN_length = 30000
 thr_samples_same_as_best = 30
 thr_samples_notbest_binned_otherbin = 50
 thr_samples_SGB_assigned_best_and_notbest = 50
 thr_samples_notbest_unbinned = 20
+thr_minlen=1500
 
 
 myContigs['prev_hits_other_dataset_distinct'] = myContigs['prev_hits_other_dataset_distinct'].replace('', np.nan).fillna(0)
 
+gut_contigs= myContigs[(myContigs['origin'] == 'STOOL')][outFieldList]
+gut_contigs_and_refseq= myContigs[(myContigs['origin'] == 'STOOL') | (myContigs['origin'] == 'REFSEQ')][outFieldList]
+
+
+
 
 filtered_mc  = myContigs[ \
  ((myContigs['origin'] == 'REFSEQ') & (myContigs['totalSGB'] >= thr_samples_notbest_unbinned ) ) | ( \
+ (myContigs['contig_len'] >= thr_minlen) & \
  (myContigs['origin'] == 'STOOL') & \
  (myContigs['prev_hits_other_dataset_distinct'].fillna(0).astype(int) >= thr_prev_hits_other_dataset_distinct) & \
  (myContigs['other_contigs_w_this_SGB_ALN_length'].fillna(0).astype(int) <= thr_other_contigs_w_this_SGB_ALN_length) & \
@@ -190,7 +206,53 @@ filtered_mc  = myContigs[ \
  (myContigs['samples_notbest_unbinned'].fillna(0).astype(int) >= thr_samples_notbest_unbinned))][outFieldList]
 
 
+RS=myContigs[(myContigs['origin'] == 'REFSEQ') & (myContigs['totalSGB'] >= thr_samples_notbest_unbinned )]
+Refseq_GOOD  = myContigs[ \
+ (myContigs['origin'] == 'REFSEQ') &  \
+ (myContigs['totalSGB'] >= thr_samples_notbest_unbinned ) & \
+ (myContigs['contig_len'] >= thr_minlen) & \
+ (myContigs['samples_same_as_best'].fillna(0).astype(int) <= thr_samples_same_as_best) & \
+ (myContigs['samples_notbest_binned_otherbin'].fillna(0).astype(int) <= thr_samples_notbest_binned_otherbin) & \
+ (myContigs['samples_SGB_assigned_best_and_notbest'].fillna(0).astype(int) <= thr_samples_SGB_assigned_best_and_notbest) & \
+ (myContigs['samples_notbest_unbinned'].fillna(0).astype(int) >= thr_samples_notbest_unbinned)][outFieldList]
+
+Refseq_BAD  = myContigs[ \
+ ((myContigs['origin'] == 'REFSEQ') & (myContigs['totalSGB'] >= thr_samples_notbest_unbinned )) &  \
+ ((myContigs['totalSGB'] < thr_samples_notbest_unbinned ) | \
+ (myContigs['contig_len'] < thr_minlen) | \
+ (myContigs['samples_same_as_best'].fillna(0).astype(int) > thr_samples_same_as_best) | \
+ (myContigs['samples_notbest_binned_otherbin'].fillna(0).astype(int) > thr_samples_notbest_binned_otherbin) | \
+ (myContigs['samples_SGB_assigned_best_and_notbest'].fillna(0).astype(int) > thr_samples_SGB_assigned_best_and_notbest) | \
+ (myContigs['samples_notbest_unbinned'].fillna(0).astype(int) < thr_samples_notbest_unbinned))][outFieldList]
+
+
+print('thr_prev_hits_other_dataset_distinct: ',thr_prev_hits_other_dataset_distinct)
+print('thr_other_contigs_w_this_SGB_ALN_length: ',thr_other_contigs_w_this_SGB_ALN_length)
+print('thr_samples_same_as_best: ',thr_samples_same_as_best)
+print('thr_samples_notbest_binned_otherbin: ',thr_samples_notbest_binned_otherbin)
+print('thr_samples_SGB_assigned_best_and_notbest: ',thr_samples_SGB_assigned_best_and_notbest)
+print('thr_samples_notbest_unbinned: ',thr_samples_notbest_unbinned)
+print('thr_minlen: ',thr_minlen)
+
 print("FINAL SHAPE: ", filtered_mc.shape)
+print("FINAL SHAPE RS: ", RS.shape)
+print("FINAL SHAPE GOOD_RS: ", Refseq_GOOD.shape) 
+print("FINAL SHAPE BAD_RS: ", Refseq_BAD.shape) 
+print("FINAL SHAPE GUT_CONTIGS: ", gut_contigs.shape) 
+
+gut_contigs.to_csv('out_toplen_gut.csv',sep='\t')
+gut_contigs_and_refseq.to_csv('out_toplen_gut_and_refseq.csv',sep='\t')
+
+Refseq_BAD.to_csv('bad_refseq.csv',sep='\t')
+
+
+
+
+
+#FN=myContigs[(myContigs['origin'] == 'REFSEQ') & ]
+#print("FINAL SHAPE RS: ", filtered_mc[filtered_mc['origin'] == 'REFSEQ'].shape)
+
+
 #myContigs[outFieldList].to_csv('out_toplen.csv',sep='\t')
 filtered_mc.to_csv('out_toplen_filtered_largethresholds.csv',sep='\t')
-print("CRASS: ", filtered_mc[filtered_mc['RefSeq_besthit_what'] == 'NC_0247111_Uncultured_crAssphage_complete_genome'].shape)
+#print("CRASS: ", filtered_mc[filtered_mc['RefSeq_besthit_what'] == 'NC_0247111_Uncultured_crAssphage_complete_genome'].shape)
