@@ -8,7 +8,9 @@ The code provided here is not optimized for universal use and is released for in
 
 Viromes with a [ViromeQC](https://github.com/SegataLab/viromeqc) enrichment score > 50 are assembled into contigs and screened with this pipeline (`asemble_sample.sh`)
 
-- Reads cleaned to remove low quality reads with Trim-Galore
+![](https://github.com/SegataLab/viromedb/blob/master/doc/img/vlp_viromes_1.jpg)
+
+- Reads are cleaned to remove low quality reads with Trim-Galore
 - Human hg19 removal (Bowtie2)
 - split-and-sort.py is used to recover read-pairs and put them in the correct order
 - Metagenomic assembly performed with (contigs longer than 500 bp are kept)
@@ -34,8 +36,8 @@ The `blast_contig.sh` script organize the mappings of each reconstructed contig 
 
 Each reconstructed contig is mapped with `hmm_contig.sh` against the following models:
 
-- (pFAM.A)[https://academic.oup.com/nar/article/47/D1/D427/5144153]
-- (vFAM 2014)[https://www.ncbi.nlm.nih.gov/pmc/articles/PMC4139300/]
+- [pFAM.A](https://academic.oup.com/nar/article/47/D1/D427/5144153)
+- [vFAM 2014](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC4139300/)
 - vFAM 2019 (custom built basing on RefSeq Viral Proteins, release 91)
 
 ### BLAST and HMM profiles merging
@@ -66,6 +68,8 @@ The resulting output is a (filtered) selection of all the assembled contigs, mer
 Finally, `extract_contigs_from_vdb_report.py` reads the filtered contigs list and extracts the associated sequences in `FASTA` format.
 
 ## ▶ Step 3: Contigs Clustering ##
+
+![](https://github.com/SegataLab/viromedb/blob/master/doc/img/vlp_viromes_3.jpg)
 
 This steps clusters the filtered contis, then runs a BLAST search on assembled metagenomes and viromes to retrieve homologues in there. The clustering is then performed again to produce multiple sequence alignments.
 
