@@ -4,7 +4,7 @@ i=$1
 odir=$2;
 
 
-tfolder=$(realpath ${odir})/trees/;
+tfolder=$(realpath ${odir})/trees_strict/;
 mkdir -p ${tfolder}/aln;
 nc=$(cat $i | grep ">" | wc -l);
 bn=$(basename $i);
@@ -12,7 +12,7 @@ bn=$(basename $i);
 if [ $nc -ge 10 ]; then
 	if [ ! -f ${tfolder}/aln/${bn//.fna/.aln} ]; then
 		echo $bn "MAFFT " $nc "seqs"
-		mafft --quiet --thread 16 --auto $i > ${tfolder}/aln/${bn//.fna/.aln};
+		mafft --quiet --thread 8 --auto $i > ${tfolder}/aln/${bn//.fna/.aln};
 	fi;
 
 #	echo ${tfolder}/aln/${bn//.fna/.trim}
@@ -23,7 +23,7 @@ if [ $nc -ge 10 ]; then
 
 	if [ ! -f ${tfolder}/RAxML_bestTree.${bn//.fna/} ]; then
 		echo $bn "RAXML " $nc "seqs"
-		raxmlHPC-PTHREADS-SSE3 -p 48315 -x 48315 -# 50 -m GTRGAMMA -f a -s ${tfolder}/aln/${bn//.fna/.trim} -n ${bn//.fna/} -T 16 -w ${tfolder}
+		raxmlHPC-PTHREADS-SSE3 -p 48315 -x 48315 -# 50 -m GTRGAMMA -f a -s ${tfolder}/aln/${bn//.fna/.trim} -n ${bn//.fna/} -T 8 -w ${tfolder}
 	fi;
 else
 	echo $bn "SKIP " $nc "seqs"

@@ -3,7 +3,7 @@ curDir=$(realpath $(dirname $0));
 
 
 
-odir="/shares/CIBIO-Storage/CM/scratch/users/moreno.zolfo/virome_data/prevalence/";
+odir="/shares/CIBIO-Storage/CM/scratch/users/moreno.zolfo/virome_data/prevalence2/";
 prefix="/shares/CIBIO-Storage/CM/scratch/data/meta"
 base=$prefix;
 ##############################################
@@ -39,10 +39,8 @@ GopalakrishnanV_2018
 RosaBA_2018
 KieserS_2018
 LassalleF_2017
-CM_ghana2
 SankaranarayananK_2015
 RampelliS_2015
-CM_guinea2
 MatsonV_2018
 SmitsSA_2017
 WingleeK_2017
@@ -58,18 +56,15 @@ LokmerA_2019
 Obregon-TitoAJ_2015
 CM_rescignocrc
 GuptaA_2019
-CM_tanzania2
 WampachL_2018
 VoigtAY_2015
 CM_tanzania
-CM_sardegna
 RaymondF_2016
 YeZ_2018
 KorpelaK_2016
 ThomasAM_2019_c
 HanniganGD_2017
 LoombaR_2017
-CM_caritro_twins
 LouisS_2016
 CM_lilt
 ChengpingW_2017
@@ -104,7 +99,12 @@ QinJ_2012
 JieZ_2017
 NielsenHB_2014
 BackhedF_2015
-SchirmerM_2016'
+SchirmerM_2016
+CM_caritro_twins
+CM_tanzania2
+CM_sardegna
+CM_guinea2
+CM_ghana2'
 
 
 
@@ -133,25 +133,25 @@ while true; do
 		if [ ! -f ${odir}/${dataset}/vdbm__${dataset}__${sample}.bam  ] && [ ! -f ${odir}/${dataset}/vdbm__${dataset}__${sample}.wk ]; then 		
 			if [ $b_short -lt 30 ]; then 
 				#echo "L" ${odir}/${dataset}/vdbm__${dataset}__${sample}.wk
-				qsub -q short_cpuQ -v prefix=\"${base}\",outDir=\"${odirE}\",dataset=\"${dataset}\",sample=\"${sample}\",uncompress_cmd=\"${extraction_cmd}\",extension=\"${extension}\" -N VDBM_${dataset}_${sample} -l select=1:ncpus=2 ${curDir}/map_bt2.sh;
+				qsub -q short_cpuQ -v prefix=\"${base}\",outDir=\"${odirE}\",dataset=\"${dataset}\",sample=\"${sample}\",uncompress_cmd=\"${extraction_cmd}\",extension=\"${extension}\",ncores=\"8\" -N VDBM_${dataset}_${sample} -l select=1:ncpus=8 ${curDir}/map_bt2.sh;
 				touch ${odir}/${dataset}/vdbm__${dataset}__${sample}.wk
 				b_short=$((b_short+1));
 				bt=$((bt+1));
 			elif [ $b_common -lt 50 ]; then 
 				#echo "L" ${odir}/${dataset}/vdbm__${dataset}__${sample}.wk
-				qsub -q common_cpuQ -v prefix=\"${base}\",outDir=\"${odirE}\",dataset=\"${dataset}\",sample=\"${sample}\",uncompress_cmd=\"${extraction_cmd}\",extension=\"${extension}\" -N VDBM_${dataset}_${sample} -l select=1:ncpus=2 ${curDir}/map_bt2.sh;
+				qsub -q common_cpuQ -v prefix=\"${base}\",outDir=\"${odirE}\",dataset=\"${dataset}\",sample=\"${sample}\",uncompress_cmd=\"${extraction_cmd}\",extension=\"${extension}\",ncores=\"4\" -N VDBM_${dataset}_${sample} -l select=1:ncpus=4 ${curDir}/map_bt2.sh;
 				touch ${odir}/${dataset}/vdbm__${dataset}__${sample}.wk
 				b_common=$((b_common+1));
 				bt=$((bt+1)); 
-			elif [ $b_cibio -lt 30 ]; then 
+			elif [ $b_cibio -lt 50 ]; then 
 				#echo "L" ${odir}/${dataset}/vdbm__${dataset}__${sample}.wk
-				qsub -q CIBIO_cpuQ -v prefix=\"${base}\",outDir=\"${odirE}\",dataset=\"${dataset}\",sample=\"${sample}\",uncompress_cmd=\"${extraction_cmd}\",extension=\"${extension}\" -N VDBM_${dataset}_${sample} -l select=1:ncpus=2 ${curDir}/map_bt2.sh;
+				qsub -q CIBIO_cpuQ -v prefix=\"${base}\",outDir=\"${odirE}\",dataset=\"${dataset}\",sample=\"${sample}\",uncompress_cmd=\"${extraction_cmd}\",extension=\"${extension}\",ncores=\"4\" -N VDBM_${dataset}_${sample} -l select=1:ncpus=4 ${curDir}/map_bt2.sh;
 				touch ${odir}/${dataset}/vdbm__${dataset}__${sample}.wk
 				b_cibio=$((b_cibio+1));
 				bt=$((bt+1));
-			elif [ $b_cibiocm -lt 30 ]; then 
+			elif [ $b_cibiocm -lt 50 ]; then 
 				#echo "L" ${odir}/${dataset}/vdbm__${dataset}__${sample}.wk
-				qsub -q CIBIOCM_cpuQ -v prefix=\"${base}\",outDir=\"${odirE}\",dataset=\"${dataset}\",sample=\"${sample}\",uncompress_cmd=\"${extraction_cmd}\",extension=\"${extension}\" -N VDBM_${dataset}_${sample} -l select=1:ncpus=2 ${curDir}/map_bt2.sh;
+				qsub -q CIBIOCM_cpuQ -v prefix=\"${base}\",outDir=\"${odirE}\",dataset=\"${dataset}\",sample=\"${sample}\",uncompress_cmd=\"${extraction_cmd}\",extension=\"${extension}\",ncores=\"4\" -N VDBM_${dataset}_${sample} -l select=1:ncpus=4 ${curDir}/map_bt2.sh;
 				touch ${odir}/${dataset}/vdbm__${dataset}__${sample}.wk
 				b_cibiocm=$((b_cibiocm+1));
 				bt=$((bt+1));

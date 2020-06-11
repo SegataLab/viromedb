@@ -53,19 +53,28 @@ for fel in glob.glob(args.step4_folder+'/rep_fnas/*.uc'):
 				if contig not in keptContigs[fullClusterID]:
 					keptContigs[fullClusterID].append(contig)
 
-	
+tll=len(keptContigs.keys())
+it=0
 
-#sys.exit(0)
+
+toWrite={}
 for clusterID,contigsToKeep in keptContigs.items():
-	filename=args.step4_folder+'/fnas/'+'__'.join(clusterID.split('__')[:-1])+'.fna'
-	print(filename)
+	it+=1
+	L2_clusterID='__'.join(clusterID.split('__')[:-1])
 
-	tw=[]
+	filename=args.step4_folder+'/fnas/'+L2_clusterID+'.fna'
+	print(it,'/',tll,os.path.basename(filename),clusterID)
+
+	
 	for rec in SeqIO.parse(filename,'fasta'):
 		if rec.id in contigsToKeep:
 			rec.id = clusterID+'__'+rec.id
-			tw.append(rec)
+			if L2_clusterID not in toWrite:
+				toWrite[L2_clusterID] = [] 
+			toWrite[L2_clusterID].append(rec)
 
-	SeqIO.write(tw,args.step4_folder+'/rep_fnas/'+clusterID+'.fna','fasta')
+
+for l2cluster,tw in toWrite.items():
+	SeqIO.write(tw,args.step4_folder+'/rep_fnas/'+l2cluster+'_reps.fna','fasta')
 
 sys.exit(0)

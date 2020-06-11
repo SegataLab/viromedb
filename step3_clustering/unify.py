@@ -159,47 +159,47 @@ for cluster in list(set(flpc['fullClusterID'])):
 	
 	#SeqIO.write(remaining_seqs,args.output_folder+'/fnas/'+cluster+'.fna','fasta')
 
-#	if len(remaining_seqs) > 1:
-#		print ("\tNow aligning elements of the cluster ", cluster,len(remaining_seqs))
-#		
-#		blast_command = ['blastn','-task','megablast','-subject',tempSubj.name,'-query','-','-outfmt',"6 qseqid sseqid length pident sstrand qstart qend sstart send"]
-#
-#		clustersElement = {}
-#
-#		for seqToCheck in remaining_seqs:
-#
-#			if args.debug: print ("\tAligning member of ",cluster,'(',seqToCheck.id,') against rep of cluster: ',clusterRep.id)
-#
-#			clustersElement[seqToCheck.id] = []
-#			p1 = subprocess.Popen(blast_command, stdin=subprocess.PIPE, stdout=subprocess.PIPE,text=True)
-#			stdout_value = p1.communicate(seqToCheck.format('fasta'))[0]
-#			for blout in str(stdout_value).split('\n'):
-#
-#				if blout:
-#					qseqid,sseqid,leng_of_alignment,pident,strand_of_alignment, qstart, qend, sstart, send = blout.split('\t')
-#
-#					if ( float(leng_of_alignment) > percentile_median_length_of_cluster / 10.0 ):
-#						
-#						#if args.debug: print ("\t",cluster,'(',seqToCheck.id,') against rep of cluster: ',clusterRep.id)
-#						clustersElement[seqToCheck.id].append(strand_of_alignment)
-#					#else:
-#
-#		
-#		clustersElementFinalOutcome_rep = Counter(clustersElement[clusterRep.id]).most_common()[0][0]
-#		contigs_to_flip=[]
-#
-#		#determine the seqs to flip in this cluster
-#		for k,v in clustersElement.items():
-#			if (v):
-#				clustersElementFinalOutcome = Counter(v).most_common()[0][0]
-#				if clustersElementFinalOutcome != clustersElementFinalOutcome_rep:
-#					contigs_to_flip.append(k)
-#					if args.debug: print ("\t",k,"Needs to be flipped: rep has alignment: ",clustersElementFinalOutcome_rep, "target has: ", v)
-#
-#			
-#
+	if len(remaining_seqs) > 1:
+		print ("\tNow aligning elements of the cluster ", cluster,len(remaining_seqs))
+		
+		blast_command = ['blastn','-task','megablast','-subject',tempSubj.name,'-query','-','-outfmt',"6 qseqid sseqid length pident sstrand qstart qend sstart send"]
+
+		clustersElement = {}
+
+		for seqToCheck in remaining_seqs:
+
+			if args.debug: print ("\tAligning member of ",cluster,'(',seqToCheck.id,') against rep of cluster: ',clusterRep.id)
+
+			clustersElement[seqToCheck.id] = []
+			p1 = subprocess.Popen(blast_command, stdin=subprocess.PIPE, stdout=subprocess.PIPE,text=True)
+			stdout_value = p1.communicate(seqToCheck.format('fasta'))[0]
+			for blout in str(stdout_value).split('\n'):
+
+				if blout:
+					qseqid,sseqid,leng_of_alignment,pident,strand_of_alignment, qstart, qend, sstart, send = blout.split('\t')
+
+					if ( float(leng_of_alignment) > percentile_median_length_of_cluster / 10.0 ):
+						
+						#if args.debug: print ("\t",cluster,'(',seqToCheck.id,') against rep of cluster: ',clusterRep.id)
+						clustersElement[seqToCheck.id].append(strand_of_alignment)
+					#else:
+
+		
+		clustersElementFinalOutcome_rep = Counter(clustersElement[clusterRep.id]).most_common()[0][0]
+		contigs_to_flip=[]
+
+		#determine the seqs to flip in this cluster
+		for k,v in clustersElement.items():
+			if (v):
+				clustersElementFinalOutcome = Counter(v).most_common()[0][0]
+				if clustersElementFinalOutcome != clustersElementFinalOutcome_rep:
+					contigs_to_flip.append(k)
+					if args.debug: print ("\t",k,"Needs to be flipped: rep has alignment: ",clustersElementFinalOutcome_rep, "target has: ", v)
+
+			
+
 	#flip the seqs
-	contigs_to_flip=[]
+	#contigs_to_flip=[]
 	finalContigsForTheCluster = []
 	for seqToCheck in remaining_seqs:
 		flip = (seqToCheck.id in contigs_to_flip)
