@@ -15,6 +15,7 @@ from Bio.SeqRecord import SeqRecord
 from Bio.Alphabet import IUPAC
 
 
+
 parser = argparse.ArgumentParser()
 parser.add_argument('folder',help="folder with fasta files")
 parser.add_argument('output',help="outputCSV")
@@ -48,7 +49,7 @@ for fil in files:
 		#hardcoded replacements
 		dataset = dataset.replace('CM_caritro','FerrettiP_2018').replace('ZeeviD_2015_A','ZeeviD_2015').replace('ZeeviD_2015_B','ZeeviD_2015').replace('RosarioK_2018_DNA','RosarioK_2018').replace('VLP_LyM_2016','LyM_2016').replace('VLP_Minot_2011','MinotS_2011').replace('VLP_Minot_2013','MinotS_2013').replace('VLP_NormanJ_2015','NormanJ_2015').replace('VLP_ReyesA_2015','ReyesA_2015').replace('LawrenceA_2015','DavidLA_2015').replace('VLP_LimE_2015_SIA','LimE_2015').replace('VLP_LimE_2015_MDA','LimE_2015').replace('LimE_2015_MDA','LimE_2015').replace('LimE_2015_SIA','LimE_2015')
 
-		dm.append({'clusterL1':L1Cluster,'clusterL2':L1Cluster,'group':group,'dataset':dataset,'sample':sample,'node':node})
+		dm.append({'clusterL1':L1Cluster,'clusterL2':L2Cluster,'group':group,'dataset':dataset,'sample':sample,'node':node})
 	i+=1
 	
 
@@ -62,5 +63,27 @@ merged = a.merge(e,how='outer',on=['dataset','group'])
 #et1=pd.pivot_table(a,index='clusterL1',columns=['group','dataset'],values='sample',aggfunc=lambda x: len(x.unique()) )
 et2=pd.pivot_table(merged,index='clusterL1',columns=['group','dataset','nsamples','dataset_short_source'],values='sample',aggfunc=lambda x: len(x.unique()) )
 
-#et1.fillna(0).to_csv('a.csv',sep='\t')
+
 et2.fillna(0).to_csv(args.output,sep='\t')
+
+#following here there are the dataset slicing for by-dataset counts (for boxplot)
+
+
+et3=merged.groupby(['group','dataset','dataset_short_source','sample'])['clusterL1'].agg(lambda x: len(x.unique())).fillna(0)
+et3.to_csv(args.output+'_group_by_L1_clusters.csv',sep='\t')
+
+
+et4=merged.groupby(['group','dataset','dataset_short_source','sample'])['clusterL2'].agg(lambda x: len(x.unique())).fillna(0)
+et4.to_csv(args.output+'_group_by_L2_clusters.csv',sep='\t')
+
+## and crAssphage counts:
+
+
+et5=merged[merged['clusterL1']=='vsearch_c72'].groupby(['group','dataset','dataset_short_source'])['sample'].agg(lambda x: len(x.unique())).fillna(0)
+et5.to_csv(args.output+'_crassphage.csv',sep='\t')
+
+#et3=pd.pivot_table(merged,index='clusterL1',columns=['group','dataset','sample','nsamples','dataset_short_source'],values='node',aggfunc= )
+
+
+
+

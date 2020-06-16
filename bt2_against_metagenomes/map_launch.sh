@@ -106,8 +106,6 @@ CM_sardegna
 CM_guinea2
 CM_ghana2'
 
-
-
 for et in $etp; do
 	for utp in $(find ${prefix}/${et}/reads -maxdepth 1 -mindepth 1 -type d); do
 		e+=($utp);
@@ -133,25 +131,25 @@ while true; do
 		if [ ! -f ${odir}/${dataset}/vdbm__${dataset}__${sample}.bam  ] && [ ! -f ${odir}/${dataset}/vdbm__${dataset}__${sample}.wk ]; then 		
 			if [ $b_short -lt 30 ]; then 
 				#echo "L" ${odir}/${dataset}/vdbm__${dataset}__${sample}.wk
-				qsub -q short_cpuQ -v prefix=\"${base}\",outDir=\"${odirE}\",dataset=\"${dataset}\",sample=\"${sample}\",uncompress_cmd=\"${extraction_cmd}\",extension=\"${extension}\",ncores=\"8\" -N VDBM_${dataset}_${sample} -l select=1:ncpus=8 ${curDir}/map_bt2.sh;
+				qsub -q short_cpuQ -v prefix=\"${base}\",outDir=\"${odirE}\",dataset=\"${dataset}\",sample=\"${sample}\",uncompress_cmd=\"${extraction_cmd}\",extension=\"${extension}\",ncores=\"16\" -N VDBM_${dataset}_${sample} -l select=1:ncpus=16 ${curDir}/map_bt2.sh;
 				touch ${odir}/${dataset}/vdbm__${dataset}__${sample}.wk
 				b_short=$((b_short+1));
 				bt=$((bt+1));
 			elif [ $b_common -lt 50 ]; then 
 				#echo "L" ${odir}/${dataset}/vdbm__${dataset}__${sample}.wk
-				qsub -q common_cpuQ -v prefix=\"${base}\",outDir=\"${odirE}\",dataset=\"${dataset}\",sample=\"${sample}\",uncompress_cmd=\"${extraction_cmd}\",extension=\"${extension}\",ncores=\"4\" -N VDBM_${dataset}_${sample} -l select=1:ncpus=4 ${curDir}/map_bt2.sh;
+				qsub -q common_cpuQ -v prefix=\"${base}\",outDir=\"${odirE}\",dataset=\"${dataset}\",sample=\"${sample}\",uncompress_cmd=\"${extraction_cmd}\",extension=\"${extension}\",ncores=\"8\" -N VDBM_${dataset}_${sample} -l select=1:ncpus=8 ${curDir}/map_bt2.sh;
 				touch ${odir}/${dataset}/vdbm__${dataset}__${sample}.wk
 				b_common=$((b_common+1));
 				bt=$((bt+1)); 
 			elif [ $b_cibio -lt 50 ]; then 
 				#echo "L" ${odir}/${dataset}/vdbm__${dataset}__${sample}.wk
-				qsub -q CIBIO_cpuQ -v prefix=\"${base}\",outDir=\"${odirE}\",dataset=\"${dataset}\",sample=\"${sample}\",uncompress_cmd=\"${extraction_cmd}\",extension=\"${extension}\",ncores=\"4\" -N VDBM_${dataset}_${sample} -l select=1:ncpus=4 ${curDir}/map_bt2.sh;
+				qsub -q CIBIO_cpuQ -v prefix=\"${base}\",outDir=\"${odirE}\",dataset=\"${dataset}\",sample=\"${sample}\",uncompress_cmd=\"${extraction_cmd}\",extension=\"${extension}\",ncores=\"8\" -N VDBM_${dataset}_${sample} -l select=1:ncpus=8 ${curDir}/map_bt2.sh;
 				touch ${odir}/${dataset}/vdbm__${dataset}__${sample}.wk
 				b_cibio=$((b_cibio+1));
 				bt=$((bt+1));
 			elif [ $b_cibiocm -lt 50 ]; then 
 				#echo "L" ${odir}/${dataset}/vdbm__${dataset}__${sample}.wk
-				qsub -q CIBIOCM_cpuQ -v prefix=\"${base}\",outDir=\"${odirE}\",dataset=\"${dataset}\",sample=\"${sample}\",uncompress_cmd=\"${extraction_cmd}\",extension=\"${extension}\",ncores=\"4\" -N VDBM_${dataset}_${sample} -l select=1:ncpus=4 ${curDir}/map_bt2.sh;
+				qsub -q CIBIOCM_cpuQ -v prefix=\"${base}\",outDir=\"${odirE}\",dataset=\"${dataset}\",sample=\"${sample}\",uncompress_cmd=\"${extraction_cmd}\",extension=\"${extension}\",ncores=\"8\" -N VDBM_${dataset}_${sample} -l select=1:ncpus=8 ${curDir}/map_bt2.sh;
 				touch ${odir}/${dataset}/vdbm__${dataset}__${sample}.wk
 				b_cibiocm=$((b_cibiocm+1));
 				bt=$((bt+1));

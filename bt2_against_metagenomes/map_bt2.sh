@@ -11,11 +11,19 @@
 #INDEX=/shares/CIBIO-Storage/CM/scratch/users/moreno.zolfo/virome_data/high_enrichment_vs_all_contigs_LT3/out_P_vsearch/step4_clusters_greedy/step4_greedy;
 INDEX=/shares/CIBIO-Storage/CM/scratch/users/moreno.zolfo/virome_data/high_enrichment_vs_all_contigs_LT5/out_P_vsearch/step4_clusters/rep_fnas_bt2;
 #inlist=$(ls ${prefix}/${dataset}/reads/${sample}/*${extension} | xargs echo | sed 's/ /,/g')
-rm /tmp/samtools.*;
 
+if [ -d /mnt/localscratch ]; then 
+	tpf=/mnt/localscratch; 
+elif [ -d /shares/CIBIO-Storage/CM/news/users/moreno.zolfo/tmp ]; then 
+	tpf=/shares/CIBIO-Storage/CM/news/users/moreno.zolfo/tmp;
+elif [ -d /shares/CIBIO-Storage/CM/scratch/users/moreno.zolfo/tmp ]; then 
+	tpf=/shares/CIBIO-Storage/CM/scratch/users/moreno.zolfo/tmp;
+else
+	tpf=/shares/CIBIO-Storage/CM/tmp/mzolfo/tmp_data/;
+fi;
 
-if [ -d /mnt/localscratch ]; then tpf=/mnt/localscratch; else tpf=/shares/CIBIO-Storage/CM/tmp/mzolfo/tmp_data/; fi;
 tmp_folder=${tpf}/${dataset}__${sample}/;
+
 mkdir -p ${tmp_folder};
 
 
@@ -24,5 +32,3 @@ $uncompress_cmd ${prefix}/${dataset}/reads/${sample}/*${extension} | /shares/CIB
 echo "MOVE"
 mv ${tmp_folder}/vdbm__${dataset}__${sample}.bam ${outDir}/;
 echo "DONE"
-
-
