@@ -8,9 +8,10 @@ The code provided here is not optimized for universal use and is released for in
 
 The entry point of the pipeline is a set of viromes (Viral-Like-Particle enrichednriched) that are highly enriched for viruses. After several steps of clustering and annotation, we release a set of ~45k refined and de-replicated sequences from viromes and metagenomes.
 
-The final set of representative sequences is available for future studies [here](http://segatalab.cibio.unitn.it/data/VDB_Zolfo_et_al.html). The raw set of non-dereplicated sequences is also available at the same location.
+## 💾 Data availability ##
 
-
+The final set of **45,872** representative sequences is available for future studies [here](http://segatalab.cibio.unitn.it/data/VDB_Zolfo_et_al.html).
+We also release the raw set of non-dereplicated sequences is also available at the same location.
 
 ## ▶ Step 0: Virome Assembly ##
 
