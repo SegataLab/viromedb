@@ -1,8 +1,16 @@
 # viromeDB
 
-The code organized in this repo recapitulates the computational steps for the assembly and curation of the sequences of ViromeDB.
+The code organized in this repo recapitulates the computational steps for the assembly and curation of the Viral Sequence Clusters (VSCs).
 
-The code provided here is not optimized for universal use and is released for information and reproducibility puroposes only. This code cannot be run "as is" and needs to be adapted to your storage and computational architecture to be used.
+The code provided here is not optimized for universal use and is released for information and reproducibility puroposes only. This code cannot be run "as is" and needs to be adapted to your storage and computational architecture to be used. 
+
+## Input and Output ##
+
+The entry point of the pipeline is a set of viromes (Viral-Like-Particle enrichednriched) that are highly enriched for viruses. After several steps of clustering and annotation, we release a set of ~45k refined and de-replicated sequences from viromes and metagenomes.
+
+The final set of representative sequences is available for future studies [here](http://segatalab.cibio.unitn.it/data/VDB_Zolfo_et_al.html). The raw set of non-dereplicated sequences is also available at the same location.
+
+
 
 ## ▶ Step 0: Virome Assembly ##
 
@@ -76,10 +84,9 @@ This steps clusters the filtered contis, then runs a BLAST search on assembled m
 1. Contigs from highly-enriched viromes are clustered with vsearch at 90% identity (i.e. **high enrinchment contigs**)
 2. Contigs are then mapped against metagenomes (n~=9000) and viromes (n~=3100) to find homologous sequences, producing an extended contigs repertoire (i.e. **extended contigs**)
 3. The extended contigs are then compared to the centroids of the initial clustering with mash. Contigs with a distance < 10% are kept.
-4. A second clustering is performed internally within each cluster, by adding the extended contigs to each cluster. Contigs that still fall in the same cluster of the **high enrinchment contigs** are kept. (i.e. **the final clusters**)
+4. A second clustering is performed internally within each cluster, by adding the extended contigs from metagenomes and viromes to each cluster. Contigs that still fall in the same cluster of the **high enrinchment contigs** are kept. (i.e. **the final clusters**)
 5. Within each final cluster, only sequences with a length +/- 20% of the median length of thee cluster go through MSA and a phylogenetic tree is produced.
-
-*Documentation: Work in Progress*
+6. Within each final cluster, sequences are selected (a 3rd clustering is performed at 95%, only centroids are kept) and taken as VSCs representatives.
 
 ## Utility data and scripts ##
 
