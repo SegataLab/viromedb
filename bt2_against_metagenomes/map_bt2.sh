@@ -13,7 +13,7 @@ INDEX=/shares/CIBIO-Storage/CM/scratch/users/moreno.zolfo/virome_data/high_enric
 #inlist=$(ls ${prefix}/${dataset}/reads/${sample}/*${extension} | xargs echo | sed 's/ /,/g')
 
 if [ -d /mnt/localscratch ]; then 
-	tpf=/mnt/localscratch; 
+	tpf=/mnt/localscratch/mz/; 
 elif [ -d /shares/CIBIO-Storage/CM/news/users/moreno.zolfo/tmp ]; then 
 	tpf=/shares/CIBIO-Storage/CM/news/users/moreno.zolfo/tmp;
 elif [ -d /shares/CIBIO-Storage/CM/scratch/users/moreno.zolfo/tmp ]; then 
