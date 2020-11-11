@@ -1,10 +1,12 @@
+#!/usr/bin/env python3
+
 import sys
 import os
 import pandas as pd
 import numpy as np
 from collections import Counter
 res=[]
-BREADTH_THR=0.8
+BREADTH_THR=0.5
 
 
 ### 																			###
@@ -20,12 +22,14 @@ import argparse
 parser = argparse.ArgumentParser()
 
 parser.add_argument("--unite")
+parser.add_argument("--unitegrp", default='VC1',help='VC1 or MCL')
 parser.add_argument("--replace", action="store_true")
 parser.add_argument("--quiet", action="store_true")
 parser.add_argument("--limit", type=int)
 parser.add_argument("--input",nargs='+')
 
 args=parser.parse_args()
+if not args.quiet: print("Start")
 
 acc=pd.read_table('/shares/CIBIO-Storage/CM/scratch/users/moreno.zolfo/virome_data/high_enrichment_vs_all_contigs_LT5/out_P_vsearch/step4_clusters/united_clusters.csv',header=0,low_memory=False)
 ecc=acc[['clusterID','RefSeq_besthitBS','RefSeq_besthit_what','contig_len','clusterType']]
@@ -36,6 +40,7 @@ ett=ecc.sort_values(by=['RefSeq_besthitBS'],ascending=False).groupby(['clusterID
 #ett=ecc.groupby(['fullClusterID']).first()
 
 metadata=pd.read_table('/shares/CIBIO-Storage/CM/scratch/users/moreno.zolfo/virome_data/elab_prevalence/metadata/all_metadata.csv',header=0,low_memory=False,sep='\t')[['sampleID','body_site','country','non_westernized']].drop_duplicates("sampleID").fillna('N/D')
+
 cluster_metadata= dict( (k.strip().split("\t")[0],k.strip().split("\t")[1]) for k in open('/shares/CIBIO-Storage/CM/scratch/users/moreno.zolfo/virome_data/elab_prevalence/metadata/cluster_metadata.csv'))
 #clusters=pd.read_table('/shares/CIBIO-Storage/CM/scratch/users/moreno.zolfo/virome_data/')
 #print(ett[ett.index=='vsearch_c12__c0'])
@@ -45,15 +50,12 @@ cluster_metadata= dict( (k.strip().split("\t")[0],k.strip().split("\t")[1]) for 
 #
 #print(ecc[ecc['fullClusterID']=='vsearch_c12__c0'])
 
-
-
-
 if not args.unite:
 	ii=0
 	
 	for u in args.input:
 
-		target='pieces/'+os.path.basename(u.strip().replace('.csv','.pd'))
+		target='pieces/'+os.path.basename(u.strip().replace('.csv','.pd').replace('.fcsv','.pd'))
 		
  		
 		if (not os.path.isfile(target) or os.stat(target).st_size == 0) or args.replace:
@@ -61,7 +63,8 @@ if not args.unite:
 			ii+=1
 
 			filename=u.strip()
-			dataset,sample=os.path.basename(filename.replace('.csv','')).split('__')
+			print( os.path.basename(filename.replace('.csv','').replace('.fcsv','')) )
+			dataset,sample=os.path.basename(filename.replace('.csv','').replace('.fcsv','')).split('__')
 
 			if not args.quiet:
 				print(dataset,sample,ii)
@@ -69,49 +72,79 @@ if not args.unite:
 
 			fline=0
 			a1=open(filename,'r')
+
+			DSCT={}
+			itte=0
+			if not args.quiet: print("First Pass")
 			for lin in a1:
 				if fline==0 or lin.strip().startswith('genome'):
 					fline=1
 					continue
 
-
 				vc,class_cov,count_cov,total_len,breadth = lin.strip().split('\t')
 				#vsearch_c1019__c0__c0__c7099-1__60__LiangG_2020__D3944__D3944__NODE_42_length_9778_cov_0.181018	2	311	9778	0.0318061
-				if int(class_cov)==3:
-		##		print(lin)
-					if(float(breadth) > BREADTH_THR):
-						
-						c1 = vc.split('__')[0]
-						c2 = '__'.join(vc.split('__')[0:2])
-						c3 = '__'.join(vc.split('__')[0:3])
-			#			print(ecc)
-						clType=list(ecc[ecc['clusterID'] == c1]['clusterType'])
-						clusterType=Counter(clType).most_common()[0][0]
 
-						if c1 in cluster_metadata:
-							cmd=' '+cluster_metadata[c1]
-						else:
-							cmd=''
+				c1 = vc.split('__')[0]
+				c2 = '__'.join(vc.split('__')[0:2])
+				c3 = '__'.join(vc.split('__')[0:3])
+				clType=list(ecc[ecc['clusterID'] == c1]['clusterType'])
+				clusterType=Counter(clType).most_common()[0][0]
+				if c1 in cluster_metadata:
+					cmd=' '+cluster_metadata[c1]
+				else:
+					cmd=''
+				c1b=c1
+				c1=clusterType[0]+'VSC '+c1.replace('vsearch_','')+cmd
 
-						c1b=c1
-						c1=clusterType[0]+'VSC '+c1.replace('vsearch_','')+cmd
-#						print(c1b,c1)
+				if vc not in DSCT:
+					DSCT[vc] = {'dataset':dataset,'sampleID':sample,'VC1':c1, 'VC2':c2, 'VC3': c3,'clusterType':clusterType, 'complete_cluster': vc, 'length': float(total_len), 'breadthTrack' :{} }
 
-						
-						res.append({'dataset':dataset,'sampleID':sample,'VC1':c1, 'VC2':c2, 'VC3': c3,'clusterType':clusterType, 'complete_cluster': vc, 'breadth': float(breadth),'length': float(total_len) })
-			#			print(vc,c1,c2,c3,breadth,median_depth)
+				DSCT[vc]['breadthTrack'][class_cov] = float(breadth)
+
+
+			if not args.quiet: print("Second Pass")
+			for vc, vcData in DSCT.items():
+				
+
+				vcData['breadth'] = np.sum([v for k,v in vcData['breadthTrack'].items() if int(k) >= 3])
+				vcData['depth'] = np.sum([v*int(k) for k,v in vcData['breadthTrack'].items() if int(k) > 0])
+
+				if(float(vcData['breadth']) > BREADTH_THR):						
+					res.append(vcData)
 
 			a1.close()
 			a=pd.DataFrame.from_dict(res)
 
-			a.to_csv('pieces/'+os.path.basename(filename.replace('.csv','.pd')),sep='\t')
+			
+
+			a[['dataset','sampleID','VC1','VC2','VC3','clusterType','complete_cluster','length','breadth','depth']].to_csv('pieces/'+os.path.basename(filename.replace('.csv','.pd').replace('.fcsv','.pd')),sep='\t')
 		#else:
 			#print(target, 'already exists')
-	sys.exit(0)
+	#sys.exit(0)
 
 
 else:
 
+	grpField=args.unitegrp
+
+	Mclusters={}
+	MclustersType={}
+	for line in open('/shares/CIBIO-Storage/CM/scratch/users/moreno.zolfo/virome_data/high_enrichment_vs_all_contigs_LT5/out_P_vsearch/step4_clusters/ava/second_round/PTP__graph.csv','r'):
+		mID,mkind,mAnnot,mRep,mSize,mList=line.strip().split('\t')
+
+		if len(mAnnot.split('|')) == 0:
+			mIDL = mID
+		elif len(mAnnot.split('|')) == 1:
+			mIDL = mID+' '+mAnnot.replace('_',' ').replace('NC ','NC_')
+		elif len(mAnnot.split('|')) > 1:
+			mIDL = mID+' '+mAnnot.split('|')[0].replace('_',' ').replace('NC ','NC_')+' (+'+str(len(mAnnot.split('|'))-1)+')'
+
+		for eleme in mList.split(','):
+
+			Mclusters[eleme] = mIDL
+			MclustersType[eleme] = mkind
+
+ 
 
 	if args.unite == 'median':
 		aggf=np.median
@@ -136,11 +169,27 @@ else:
  
 print(a.shape)
 
+def tak1(a):
+	return a.split('__')[0]
 
-a.to_csv('all_breadth.csv',sep='\t')
+def tak1(a):
+	return a.split('__')[0]
+
+
 
 a= a.merge(metadata, on='sampleID',how='left')
+#a.to_csv('all_breadth.csv',sep='\t')
+#sys.exit(0) 
 a=a[a['body_site']=='stool']
+a['VC1f'] = a['VC2'].apply(tak1)
+
+if args.unitegrp == 'MCL':
+	a['groupType'] = a['VC1f'].map(MclustersType)
+	a['MCL'] = a['VC1f'].map(Mclusters)
+else:
+	a['groupType'] = a['clusterType']
+	#a['VC1'] = a['VC1'].asstring
+
 
  
 a['datsample'] = a['dataset']+'*'+a['sampleID']
@@ -154,13 +203,13 @@ print("NS1:",sampleNo)
 
 
 
-#a.to_csv('elab/vcta.csv',sep='\t')
+a.to_csv('./vcta.csv',sep='\t')
 print(a.shape)
 #a[a['body_site'].isnull()].to_csv('elab/lonley.csv',sep='\t')
-#sys.exit(0)
 
 
-vct1=pd.pivot_table(a,columns=['sampleID','dataset','body_site','country','non_westernized'],index=['VC1'],values=['breadth','length'],aggfunc=aggf)['breadth']
+
+vct1=pd.pivot_table(a,columns=['sampleID','dataset','body_site','country','non_westernized'],index=[grpField],values=['breadth','length'],aggfunc=aggf)['breadth']
 vct1.fillna(0).to_csv('./all_vct1.csv',sep='\t')
 
 #print(vct1)
@@ -176,7 +225,7 @@ for dat in set(AT['dataset']):
 datasetGroupedPrev=AT.merge(pd.DataFrame.from_dict(datasetD),how='outer',on='dataset')
 #print(datasetGroupedPrev)
 
-datasetGroupedPrev_vct1=pd.pivot_table(datasetGroupedPrev,columns=['dataset','nsamples'],index=['VC1'],values='sampleID',aggfunc= lambda x: len(x.unique()))
+datasetGroupedPrev_vct1=pd.pivot_table(datasetGroupedPrev,columns=['dataset','nsamples'],index=[grpField],values='sampleID',aggfunc= lambda x: len(x.unique()))
 datasetGroupedPrev_vct1.fillna(0).to_csv('./per_dataset_vct1.csv',sep='\t')
 
 #unknown_clusters_vct1=pd.pivot_table(AT,columns=['dataset'],index=['VC1'],values='sampleID',aggfunc= lambda x: len(x.unique()))
@@ -185,22 +234,21 @@ print ("S2")
 
 
 AT = a.copy(deep=True)
-unknown_clusters=AT[AT['clusterType'] == 'uVSC']
-unknown_clusters_vct1=pd.pivot_table(unknown_clusters,columns=['sampleID','dataset','body_site','country','non_westernized'],index=['VC1'],values='breadth',aggfunc=aggf)
+unknown_clusters=AT[(AT['groupType'] == 'uVSG') | (AT['groupType'] == 'uVSC')]
+unknown_clusters_vct1=pd.pivot_table(unknown_clusters,columns=['sampleID','dataset','body_site','country','non_westernized'],index=[grpField],values='breadth',aggfunc=aggf)
 unknown_clusters_vct1.fillna(0).to_csv('./unknown_clusters_vct1.csv',sep='\t')
 print ("S3")
 AT = a.copy(deep=True)
-known_clusters=AT[AT['clusterType'] == 'kVSC']
-known_clusters_vct1=pd.pivot_table(known_clusters,columns=['sampleID','dataset','body_site','country','non_westernized'],index=['VC1'],values='breadth',aggfunc=aggf)
+known_clusters=AT[(AT['groupType'] == 'kVSG') | (AT['groupType'] == 'kVSC')]
+known_clusters_vct1=pd.pivot_table(known_clusters,columns=['sampleID','dataset','body_site','country','non_westernized'],index=[grpField],values='breadth',aggfunc=aggf)
 known_clusters_vct1.fillna(0).to_csv('./known_clusters_vct1.csv',sep='\t')
 
 AT = a.copy(deep=True)
 nonwest=AT[AT['non_westernized'] == 'yes']
-nonwest_vct1=pd.pivot_table(nonwest,columns=['sampleID','dataset','body_site','country','non_westernized'],index='VC1',values='breadth',aggfunc=aggf)
+nonwest_vct1=pd.pivot_table(nonwest,columns=['sampleID','dataset','body_site','country','non_westernized'],index=grpField,values='breadth',aggfunc=aggf)
 nonwest_vct1.fillna(0).to_csv('./nonwest_vct1.csv',sep='\t')
 
 vct3 = vct1.copy(deep=True)
-
 
 sampleNo=len(set(a['datsample']))
 print("NS:",sampleNo)

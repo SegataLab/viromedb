@@ -4,7 +4,7 @@ i=$1
 odir=$2;
 
 
-tfolder=$(realpath ${odir})/trees_strict/;
+tfolder=$(realpath ${odir})/trees_cc_trim_greedy/;
 mkdir -p ${tfolder}/aln;
 nc=$(cat $i | grep ">" | wc -l);
 bn=$(basename $i);

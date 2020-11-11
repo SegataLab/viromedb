@@ -104,7 +104,13 @@ CM_caritro_twins
 CM_tanzania2
 CM_sardegna
 CM_guinea2
-CM_ghana2'
+CM_ghana2
+VatanenT_2016
+YachidaS_2019
+IebbaV_2018';
+
+
+etp='BackhedF_2015';
 
 for et in $etp; do
 	for utp in $(find ${prefix}/${et}/reads -maxdepth 1 -mindepth 1 -type d); do
@@ -127,34 +133,43 @@ while true; do
 		dataset=$(basename $(dirname $(dirname $folder)));
 		mkdir -p ${odir}/${dataset}/
 		odirE=${odir}/${dataset}/
+		
 
-		if [ ! -f ${odir}/${dataset}/vdbm__${dataset}__${sample}.bam  ] && [ ! -f ${odir}/${dataset}/vdbm__${dataset}__${sample}.wk ]; then 		
-			if [ $b_short -lt 30 ]; then 
+		if [ ! -f ${odir}/${dataset}/vdbm__${dataset}__${sample}.bam  ] && [ ! -f ${odir}/${dataset}/vdbm__${dataset}__${sample}.fbam  ] && [ ! -f ${odir}/${dataset}/vdbm__${dataset}__${sample}.wk ]; then 		
+			if [ $b_short -lt 0 ]; then 
 				#echo "L" ${odir}/${dataset}/vdbm__${dataset}__${sample}.wk
+				echo ${dataset} ${sample};
 				qsub -q short_cpuQ -v prefix=\"${base}\",outDir=\"${odirE}\",dataset=\"${dataset}\",sample=\"${sample}\",uncompress_cmd=\"${extraction_cmd}\",extension=\"${extension}\",ncores=\"16\" -N VDBM_${dataset}_${sample} -l select=1:ncpus=16 ${curDir}/map_bt2.sh;
 				touch ${odir}/${dataset}/vdbm__${dataset}__${sample}.wk
 				b_short=$((b_short+1));
 				bt=$((bt+1));
-			elif [ $b_common -lt 50 ]; then 
+			elif [ $b_common -lt 600 ]; then 
 				#echo "L" ${odir}/${dataset}/vdbm__${dataset}__${sample}.wk
+				${dataset} ${sample};
 				qsub -q common_cpuQ -v prefix=\"${base}\",outDir=\"${odirE}\",dataset=\"${dataset}\",sample=\"${sample}\",uncompress_cmd=\"${extraction_cmd}\",extension=\"${extension}\",ncores=\"8\" -N VDBM_${dataset}_${sample} -l select=1:ncpus=8 ${curDir}/map_bt2.sh;
 				touch ${odir}/${dataset}/vdbm__${dataset}__${sample}.wk
 				b_common=$((b_common+1));
 				bt=$((bt+1)); 
-			elif [ $b_cibio -lt 50 ]; then 
+			elif [ $b_cibio -lt 0 ]; then 
 				#echo "L" ${odir}/${dataset}/vdbm__${dataset}__${sample}.wk
+				echo ${dataset} ${sample};
 				qsub -q CIBIO_cpuQ -v prefix=\"${base}\",outDir=\"${odirE}\",dataset=\"${dataset}\",sample=\"${sample}\",uncompress_cmd=\"${extraction_cmd}\",extension=\"${extension}\",ncores=\"8\" -N VDBM_${dataset}_${sample} -l select=1:ncpus=8 ${curDir}/map_bt2.sh;
 				touch ${odir}/${dataset}/vdbm__${dataset}__${sample}.wk
 				b_cibio=$((b_cibio+1));
 				bt=$((bt+1));
-			elif [ $b_cibiocm -lt 50 ]; then 
+			elif [ $b_cibiocm -lt 0 ]; then 
 				#echo "L" ${odir}/${dataset}/vdbm__${dataset}__${sample}.wk
+				echo ${dataset} ${sample};
 				qsub -q CIBIOCM_cpuQ -v prefix=\"${base}\",outDir=\"${odirE}\",dataset=\"${dataset}\",sample=\"${sample}\",uncompress_cmd=\"${extraction_cmd}\",extension=\"${extension}\",ncores=\"8\" -N VDBM_${dataset}_${sample} -l select=1:ncpus=8 ${curDir}/map_bt2.sh;
 				touch ${odir}/${dataset}/vdbm__${dataset}__${sample}.wk
 				b_cibiocm=$((b_cibiocm+1));
 				bt=$((bt+1));
 			fi;
+		else
+			echo ${odir}/${dataset}/vdbm__${dataset}__${sample}.bam ${odir}/${dataset}/vdbm__${dataset}__${sample}.fbam ${odir}/${dataset}/vdbm__${dataset}__${sample}.wk;
+
 		fi;
+
 	done;
 
 	a=$(qstat -u moreno.zolfo | grep "VDBM" | grep " R " | wc -l);

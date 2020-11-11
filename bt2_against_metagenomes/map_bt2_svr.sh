@@ -12,9 +12,9 @@ extension='.fastq.bz2';
 
 INDEX=/shares/CIBIO-Storage/CM/scratch/users/moreno.zolfo/virome_data/high_enrichment_vs_all_contigs_LT5/out_P_vsearch/step4_clusters/rep_fnas_bt2;
 
-mkdir -p ${outDir}/${dataset}/ 
+mkdir -p ${outDir}/${dataset}/
 
-if [ ! -f ${outDir}/${dataset}/vdbm__${dataset}__${sample}.wk ] & [ ! -f ${outDir}/${dataset}/vdbm__${dataset}__${sample}.bam ] ; then
+if [ ! -f ${outDir}/${dataset}/vdbm__${dataset}__${sample}.wk ] && [ ! -f ${outDir}/${dataset}/vdbm__${dataset}__${sample}.bam ] ; then
 	touch ${outDir}/${dataset}/vdbm__${dataset}__${sample}.wk
 
 	if [ -d /local-storage/mz/ ]; then 

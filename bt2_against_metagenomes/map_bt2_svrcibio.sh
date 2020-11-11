@@ -15,7 +15,7 @@ INDEX=/shares/CIBIO-Storage/CM/scratch/users/moreno.zolfo/virome_data/high_enric
 
 mkdir -p ${outDir}/${dataset}/
 
-if [ ! -f ${outDir}/${dataset}/vdbm__${dataset}__${sample}.wk ] & [ ! -f ${outDir}/${dataset}/vdbm__${dataset}__${sample}.bam ] ; then
+if [ ! -f ${outDir}/${dataset}/vdbm__${dataset}__${sample}.wk ] && [ ! -f ${outDir}/${dataset}/vdbm__${dataset}__${sample}.bam ] ; then
 	touch ${outDir}/${dataset}/vdbm__${dataset}__${sample}.wk
 
 	if [ -d /shares/CIBIO-Storage/CM/news/users/moreno.zolfo/tmp ]; then 

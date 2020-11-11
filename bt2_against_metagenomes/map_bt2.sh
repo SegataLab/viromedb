@@ -28,7 +28,11 @@ mkdir -p ${tmp_folder};
 
 
 echo "OK" ${tmp_folder}
-$uncompress_cmd ${prefix}/${dataset}/reads/${sample}/*${extension} | /shares/CIBIO-Storage/CM/news/users/moreno.zolfo/mytools/fastq_len_filter.py --min_len 75 |  bowtie2 -U - -p ${ncores} -x ${INDEX} -a --no-unal -S - | samtools view -bS - | samtools sort -@${ncores} -T ${tmp_folder} > ${tmp_folder}/vdbm__${dataset}__${sample}.bam;
+$uncompress_cmd ${prefix}/${dataset}/reads/${sample}/*${extension} | /shares/CIBIO-Storage/CM/news/users/moreno.zolfo/mytools/fastq_len_filter.py --min_len 75 |  bowtie2 -U - -p ${ncores} -x ${INDEX} -a --no-unal -S - | awk '{ split ($0, a, "\t"); split(a[12],b,":"); if (b[3] >= -50 || $0 ~ /^@/) print $0; }' | samtools view -bS - | samtools sort -@${ncores} -T ${tmp_folder} > ${tmp_folder}/vdbm__${dataset}__${sample}.fbam;
+
+bedtools genomecov -ibam ${tmp_folder}/vdbm__${dataset}__${sample}.fbam > ${tmp_folder}/vdbm__${dataset}__${sample}.fcsv;
+
 echo "MOVE"
-mv ${tmp_folder}/vdbm__${dataset}__${sample}.bam ${outDir}/;
+mv ${tmp_folder}/vdbm__${dataset}__${sample}.fbam ${outDir}/;
+mv ${tmp_folder}/vdbm__${dataset}__${sample}.fcsv ${outDir}/;
 echo "DONE"
