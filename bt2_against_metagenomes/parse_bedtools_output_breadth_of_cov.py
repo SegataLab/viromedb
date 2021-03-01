@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
 
 import sys
+import gzip
 import os
 import pandas as pd
 import numpy as np
 from collections import Counter
 res=[]
-BREADTH_THR=0.5
+BREADTH_THR=0.8
 
 
 ### 																			###
@@ -22,7 +23,7 @@ import argparse
 parser = argparse.ArgumentParser()
 
 parser.add_argument("--unite")
-parser.add_argument("--unitegrp", default='VC1',help='VC1 or MCL')
+parser.add_argument("--unitegrp", default='MCL',help='VC1 or MCL')
 parser.add_argument("--replace", action="store_true")
 parser.add_argument("--quiet", action="store_true")
 parser.add_argument("--limit", type=int)
@@ -55,7 +56,7 @@ if not args.unite:
 	
 	for u in args.input:
 
-		target='pieces/'+os.path.basename(u.strip().replace('.csv','.pd').replace('.fcsv','.pd'))
+		target='pieces/'+os.path.basename(u.strip().replace('.fcsv.gz','.pd'))
 		
  		
 		if (not os.path.isfile(target) or os.stat(target).st_size == 0) or args.replace:
@@ -63,15 +64,17 @@ if not args.unite:
 			ii+=1
 
 			filename=u.strip()
-			print( os.path.basename(filename.replace('.csv','').replace('.fcsv','')) )
-			dataset,sample=os.path.basename(filename.replace('.csv','').replace('.fcsv','')).split('__')
+			print( os.path.basename(filename.replace('.fcsv.gz','')) )
+			print(os.path.basename(filename.replace('.fcsv.gz','')))
+			print(os.path.basename(filename.replace('.fcsv.gz','')).split('__'))
+			dataset,sample=os.path.basename(filename.replace('.fcsv.gz','')).split('__')
 
 			if not args.quiet:
 				print(dataset,sample,ii)
 
 
 			fline=0
-			a1=open(filename,'r')
+			a1=gzip.open(filename,'rt')
 
 			DSCT={}
 			itte=0
@@ -117,10 +120,10 @@ if not args.unite:
 
 			
 
-			a[['dataset','sampleID','VC1','VC2','VC3','clusterType','complete_cluster','length','breadth','depth']].to_csv('pieces/'+os.path.basename(filename.replace('.csv','.pd').replace('.fcsv','.pd')),sep='\t')
+			a[['dataset','sampleID','VC1','VC2','VC3','clusterType','complete_cluster','length','breadth','depth']].to_csv('pieces/'+os.path.basename(filename.replace('.fcsv.gz','.pd')),sep='\t')
 		#else:
 			#print(target, 'already exists')
-	#sys.exit(0)
+	sys.exit(0)
 
 
 else:
@@ -149,7 +152,9 @@ else:
 	if args.unite == 'median':
 		aggf=np.median
 	if args.unite == 'avg':
-		aggf=np.mea
+		aggf=np.mean
+	if args.unite == 'max':	
+		aggf=np.max
 
 	else:
 		aggf=np.max
@@ -181,6 +186,7 @@ a= a.merge(metadata, on='sampleID',how='left')
 #a.to_csv('all_breadth.csv',sep='\t')
 #sys.exit(0) 
 a=a[a['body_site']=='stool']
+a=a[a['breadth'] > BREADTH_THR]
 a['VC1f'] = a['VC2'].apply(tak1)
 
 if args.unitegrp == 'MCL':
@@ -203,14 +209,14 @@ print("NS1:",sampleNo)
 
 
 
-a.to_csv('./vcta.csv',sep='\t')
+#a.to_csv('./vcta.csv',sep='\t')
 print(a.shape)
 #a[a['body_site'].isnull()].to_csv('elab/lonley.csv',sep='\t')
 
 
 
 vct1=pd.pivot_table(a,columns=['sampleID','dataset','body_site','country','non_westernized'],index=[grpField],values=['breadth','length'],aggfunc=aggf)['breadth']
-vct1.fillna(0).to_csv('./all_vct1.csv',sep='\t')
+vct1.fillna(0).to_csv('./all_vct1_breadth.csv',sep='\t')
 
 #print(vct1)
 #sys.exit(0)
