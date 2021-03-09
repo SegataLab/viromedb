@@ -55,8 +55,8 @@ if os.path.isdir(args.folder):
 		ta.append(tato)
 	a=pd.concat(ta)
 
- 
-print("NS0:",sampleNo, a.shape)
+sampleNo=len(set(a['sampleFullName']))
+print("NS0 (before metadata)",sampleNo, a.shape)
 
 # Add in the metadata
 a= a.merge(metadata, on='sampleID',how='left')
@@ -70,8 +70,7 @@ a=a[a['body_site']=='stool']
 a=a[a[args.value] > args.value_threshold]
 
 sampleNo=len(set(a['sampleFullName']))
-
-print("NS1:",sampleNo, a.shape)
+print("NS1 (after metadata)",sampleNo, a.shape)
 
 
 vct1=pd.pivot_table(a,columns=['sampleID','dataset','body_site','country','non_westernized','age_category','disease'],index='compositeIDX',values=args.value,aggfunc=np.max)
@@ -117,7 +116,7 @@ nonwest_vct1.fillna(0).to_csv('./nonwest_vct1.csv',sep='\t')
 print("NS nonwest:",nonwest_vct1.shape)
 
 vct3 = vct1.copy(deep=True)
-#sampleNo=len(set(a['sampleFullName']))
+sampleNo=len(set(a['sampleFullName']))
 #print("NS:",sampleNo)
 
 #TODO
