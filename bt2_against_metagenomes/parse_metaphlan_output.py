@@ -43,16 +43,19 @@ if os.path.isdir(args.folder):
 		#if itt > 100: break
 		print(itt,'/',len(lf),'read ',f)
 		itt+=1
-		tato = pd.read_table(f,sep='\t',skiprows=3).fillna('')
+		try:
+			tato = pd.read_table(f,sep='\t',skiprows=3).fillna('')
 
-		sampleFullName = os.path.basename(f).replace('.tsv','')
-		dataset, sampleName =  sampleFullName.split('__')
-		tato['sampleFullName'] = sampleFullName
-		tato['dataset'] = dataset
-		tato['sampleID'] = sampleName
-		tato['compositeIDX'] =  tato[['M-Group-Type [k|u]','M-Group/Cluster','First Genome in Cluster']].agg('|'.join, axis=1) 
-		
-		ta.append(tato)
+			sampleFullName = os.path.basename(f).replace('.tsv','')
+			dataset, sampleName =  sampleFullName.split('__')
+			tato['sampleFullName'] = sampleFullName
+			tato['dataset'] = dataset
+			tato['sampleID'] = sampleName
+			tato['compositeIDX'] =  tato[['M-Group-Type [k|u]','M-Group/Cluster','First Genome in Cluster']].agg('|'.join, axis=1) 
+
+			ta.append(tato)
+		except Exception as e:
+			print("Warning, file ", f , " is empty or wrongly formatted")
 	a=pd.concat(ta)
 
 sampleNo=len(set(a['sampleFullName']))
