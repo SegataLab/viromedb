@@ -12,6 +12,7 @@ import numpy as np
 from collections import Counter
 
 parser = argparse.ArgumentParser()
+parser = argparse.ArgumentParser(help="Unify spacers fasata files produced by run_minced_on_sample.py")
 parser.add_argument('folder')
 parser.add_argument('out')
 

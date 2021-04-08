@@ -30,7 +30,7 @@ parser.add_argument("folder", metavar="INPUT_FOLDER")
 args=parser.parse_args()
 
 
-metadata=pd.read_table('/shares/CIBIO-Storage/CM/scratch/users/moreno.zolfo/virome_data/elab_prevalence4/merged_metadata.tsv',header=0,low_memory=False,sep='\t')[['sampleID','body_site','country','non_westernized','age_category','disease']].drop_duplicates("sampleID").fillna('N/D')
+metadata=pd.read_table('/shares/CIBIO-Storage/CM/scratch/users/moreno.zolfo/virome_data/elab_prevalence4/merged_metadata.tsv',header=0,low_memory=False,sep='\t')[['sampleID','body_site','country','non_westernized','age_category','healthy']].drop_duplicates("sampleID").fillna('N/D')
 
 ta=[]
 if os.path.isdir(args.folder):
@@ -76,7 +76,7 @@ sampleNo=len(set(a['sampleFullName']))
 print("NS1 (after metadata)",sampleNo, a.shape)
 
 
-vct1=pd.pivot_table(a,columns=['sampleID','dataset','body_site','country','non_westernized','age_category','disease'],index='compositeIDX',values=args.value,aggfunc=np.max)
+vct1=pd.pivot_table(a,columns=['sampleID','dataset','body_site','country','non_westernized','age_category','healthy'],index='compositeIDX',values=args.value,aggfunc=np.max)
 vct1.fillna(0).to_csv('./all_vct1_breadth.csv',sep='\t')
 
 
@@ -98,7 +98,7 @@ print("NS per dataset:",datasetGroupedPrev_vct1.shape)
 
 AT = a.copy(deep=True)
 unknown_clusters=AT[AT['M-Group-Type [k|u]'] == 'uVSG']
-unknown_clusters_vct1=pd.pivot_table(unknown_clusters,columns=['sampleID','dataset','body_site','country','non_westernized','age_category','disease'],index='compositeIDX',values=args.value,aggfunc=np.max)
+unknown_clusters_vct1=pd.pivot_table(unknown_clusters,columns=['sampleID','dataset','body_site','country','non_westernized','age_category','healthy'],index='compositeIDX',values=args.value,aggfunc=np.max)
 unknown_clusters_vct1.fillna(0).to_csv('./unknown_clusters_vct1.csv',sep='\t')
 
 print("NS unknowns:",unknown_clusters_vct1.shape)
@@ -106,14 +106,14 @@ print("NS unknowns:",unknown_clusters_vct1.shape)
 print ("S3")
 AT = a.copy(deep=True)
 known_clusters=AT[AT['M-Group-Type [k|u]'] == 'kVSG']
-known_clusters_vct1=pd.pivot_table(known_clusters,columns=['sampleID','dataset','body_site','country','non_westernized','age_category','disease'],index='compositeIDX',values=args.value,aggfunc=np.max)
+known_clusters_vct1=pd.pivot_table(known_clusters,columns=['sampleID','dataset','body_site','country','non_westernized','age_category','healthy'],index='compositeIDX',values=args.value,aggfunc=np.max)
 known_clusters_vct1.fillna(0).to_csv('./known_clusters_vct1.csv',sep='\t')
 
 print("NS knowns:",known_clusters_vct1.shape)
 
 AT = a.copy(deep=True)
 nonwest=AT[AT['non_westernized'] == 'yes']
-nonwest_vct1=pd.pivot_table(nonwest,columns=['sampleID','dataset','body_site','country','non_westernized','age_category','disease'],index='compositeIDX',values=args.value,aggfunc=np.max)
+nonwest_vct1=pd.pivot_table(nonwest,columns=['sampleID','dataset','body_site','country','non_westernized','age_category','healthy'],index='compositeIDX',values=args.value,aggfunc=np.max)
 nonwest_vct1.fillna(0).to_csv('./nonwest_vct1.csv',sep='\t')
 
 print("NS nonwest:",nonwest_vct1.shape)
