@@ -286,11 +286,11 @@ elif args.normalize_by_txt:
 
 ##PLOTS ##
 ##PLOTS ##
-
+log("Saving Pivot")
+pivot.to_csv(args.outdir +'/' + SIG + '_report_counts.csv',sep='\t')
 
 if args.plots:
-	log("Initiate Plots")
-	pivot.to_csv(args.outdir +'/' + SIG + '_report_counts.csv',sep='\t')
+	log("Plotting")
 
 	import seaborn as sns
 	import matplotlib.pyplot as plt
