@@ -19,6 +19,9 @@ import itertools
 import collections.abc
 from argparse import RawTextHelpFormatter
 
+import matplotlib.pyplot as plt
+import matplotlib.ticker as mtick
+
 parser = argparse.ArgumentParser(description="Unify CRISPR-BLASTS hits on Viral Contigs \
 \n    This script parses the blast-out-table of \
 \n    CRISPR-spacers vs VS viral-contigs \
@@ -33,12 +36,14 @@ parser = argparse.ArgumentParser(description="Unify CRISPR-BLASTS hits on Viral 
 parser.add_argument('--blast',help="path to the starting blast file with hits (query: CRISPR-spacer, subject viral-contig)", required=True)
 parser.add_argument('--clusters',help="path to the grouping of identical spacers (cd-hit .clstr file)", required=True)
 parser.add_argument('--manifest',help="path to the spacers manifest (the specific data for each spacer)", required=True)
+parser.add_argument('--maginfo', help='MAGs Table',required=True)
+
 parser.add_argument('--groups',help="path to a file aggregating sseqIDs by --groupby")
 parser.add_argument('--groups_index_col',help="ID of field containing Seqs IDs (default: 0)",default=0, type=int)
 parser.add_argument('--groupby',help="field of --groups to group by (e.g. M-Group)")
 parser.add_argument('--split_sseqid',help="split sseqid by this field for --groups lookup lookup")
 parser.add_argument('--normalize_by_txt',help="TXT FILE WITH GROUPS (if not using --grupby and m-groups)")
-parser.add_argument('--nproc', type=int, default=32)
+parser.add_argument('--nproc', type=int, default=50)
 #parser.add_argument('--spacers_report_file',help="the main output file containing spacers-vscs pairings", default='CRISPR-spacers_all.csv')
 
 parser.add_argument('--outdir',help='out dir',default='./')
@@ -46,17 +51,21 @@ parser.add_argument('--minqcov', help='minimum perc. identity for BLAST alignmen
 parser.add_argument('--minpident', help='minimum query coverage for BLAST alignments (default: 99)', default=99, type=int)
 parser.add_argument('--maxsnps', help='max snps to allow', default=0, type=int)
 
-
 parser.add_argument('--plots', action='store_true')
+parser.add_argument('--darkmode', action='store_true', help="plot in dark mode")
 parser.add_argument('--plot_collapse',help="Consider X amount of species and SGBIDs hits as non significant (filter only >=X)",default=5,type=int)
 
 
 args = parser.parse_args()
-#Metaref-CRISPR-onlyAssignedMAGs.manifest.csv
 
 ### Blast run as:
 ### blastn -query <DEREP_FASTA_SPACERS> -db <VSCs_DB> -word_size 7 -num_threads 32 -outfmt "6 qseqid sseqid pident length mismatch gapopen qstart qend sstart send evalue bitscore qlen slen qcovs" -max_target_seqs 500000 -evalue 0.01 > blast_out.csv
 ###
+
+
+mg=pd.read_table(args.maginfo,sep='\t')
+maginfo=mg[mg['filtered'] == 'No']
+species2magumber = pd.pivot_table(maginfo,index='species',values='mag_id',aggfunc=len)
 
 if args.groups:
 	mode="GRP"
@@ -80,9 +89,10 @@ def blastMultiRead(df):
 		sseqid=line['sseqid']
 		pident=line['pident']
 		length=line['length']
+		evalue=line['evalue']
 		mismatch=line['mismatch']
 		gapopen=line['gapopen']
-		qcovs=line['qcovs']
+		qcovs=float(line['length'])/float(line['qlen'])*100
 
 		#MGroup = sseqid.split('|')[2].split('-')[0]
 		if args.groups:
@@ -91,7 +101,7 @@ def blastMultiRead(df):
 			if sseqid in seqInfos.index:
 				MGroup = seqInfos.loc[sseqid][args.groupby]
 			elif sseqid_splitted and sseqid_splitted in seqInfos.index:
-                                MGroup = seqInfos.loc[sseqid_splitted][args.groupby]
+				MGroup = seqInfos.loc[sseqid_splitted][args.groupby]
 			else:
 				log("sseqid: "+sseqid+" not found")
 				sys.exit(1)
@@ -101,7 +111,7 @@ def blastMultiRead(df):
 		spacerID= qseqid.split('__')[0]
 		#print("M-Group:", MGroup)
 
-		if float(pident) > args.minpident and float(qcovs) > args.minqcov and (int(mismatch)+int(gapopen)) <= args.maxsnps:
+		if float(pident) > args.minpident and float(qcovs) > args.minqcov and (int(mismatch)+int(gapopen)) <= args.maxsnps and float(evalue) <= 0.01:
 			#print(sseqid,sseqid,pident,length,qlen,slen)
 			#if lineidx % 1000 == 0:
 			#	print(str(round(float(lineidx)/float(num_lines_in_file)*100,2))+'%',end='\r')
@@ -131,7 +141,20 @@ def iret (lister,nen):
 
 def stringify(c):
 
-	return '|'.join([k+' ('+str(v)+')' for (k,v) in c.most_common()  ])
+	return ';'.join([k+' ('+str(v)+')' for (k,v) in c.most_common()  ])
+
+def stringify2(c):
+
+	p={}
+	
+	for _ in c:
+		species,magID = _.split('##')
+		#maginfo
+		if species not in p:
+			p[species] = []
+		p[species].append(magID)
+	
+	return ' | '.join(['{} ({}/{})'.format(k,len(set(v)), int(species2magumber.loc[k]) ) for k,v in sorted(p.items(),key=lambda x: len(set(x[1])),reverse=True ) ])
 
 def log(m):
 
@@ -239,11 +262,12 @@ if not os.path.exists(spacers_report_file):
 	allMs.to_csv(spacers_report_file,sep='\t')
 
 else:
-	log(spacers_report_file + " found. Using it now")
-	allMs = pd.read_table(spacers_report_file,sep='\t',header=0,index_col=0)
+	
+	allMs = pd.read_table(spacers_report_file,sep='\t',header=0)
 
 
 #print (allMs)
+
 
 #pivot=pd.pivot_table(allMs,index='M-Group',values=['species','sgbID','MAG_ID'],aggfunc=lambda x : len(x.unique()))
 pivot=pd.pivot_table(allMs,index='M-Group',values=['species','sgbID','MAG_ID','spacerID'],aggfunc={'species':lambda x : iret(Counter(x),args.plot_collapse), 'sgbID':lambda x : iret(Counter(x),args.plot_collapse), 'MAG_ID': lambda x: len(x.unique()), 'spacerID': lambda x: len(x.unique()) })
@@ -277,8 +301,11 @@ elif args.normalize_by_txt:
 
 #pivot.to_csv(args.plot +'_' +sig + + '_report_counts.csv',sep='\t')
 
-#pivot=pd.pivot_table(allMs,index='M-Group',values=['species','sgbID','dataset'],aggfunc=lambda x : stringify(Counter(x))  )
-#pivot.to_csv('CRISPR-spacers_in_M-Groups_pivot.csv',sep='\t')
+
+allMs['species_bin'] = allMs['species']+'##'+allMs['MAG_ID']
+
+pivot_species=pd.pivot_table(allMs,index='M-Group',values='species_bin',aggfunc=stringify2)
+pivot_species.to_csv(args.outdir +'/' + SIG + '_report_species.csv',sep='\t')
 ##for k,v in spacers.items():
 ##	print(k,v)
 #plot_collapse
@@ -295,33 +322,50 @@ if args.plots:
 	import seaborn as sns
 	import matplotlib.pyplot as plt
 	sns.set(style="ticks")
+	
+	if args.darkmode:
+		plt.style.use("dark_background")
+		cumulative_color='#cfdf0c';
+		species_color = '#f32222'
+		sgbs_color = '#30a8e6'
+		mags_color = '#78d444'
+		spacers_color = '#e6bb30'
+	else:
+		cumulative_color='k';
+
+		species_color = '#b90f0f'
+		sgbs_color = '#307fb9'
+		mags_color = '#127b1f'
+		spacers_color = '#b9740f'
 
 	f,ax = plt.subplots(3,4,sharey='row',sharex='col',figsize=(25,9),gridspec_kw={'height_ratios':[1,3,3]})
 
-	sns.histplot(data=pivot, stat='probability', element="step", fill=False, cumulative=True, binwidth=1, x="species",ax=ax[0][0])
-	sns.histplot(data=pivot, stat='probability', element="step", fill=False, cumulative=True, binwidth=1, x="sgbID",ax=ax[0][1])
-	sns.histplot(data=pivot, stat='probability', element="step", fill=False, cumulative=True, binwidth=1, x="MAG_ID",ax=ax[0][2])
-	sns.histplot(data=pivot, stat='probability', element="step", fill=False, cumulative=True, binwidth=1, x="spacerID",ax=ax[0][3])
+	sns.histplot(data=pivot, stat='probability', color=cumulative_color, element="step", fill=False, cumulative=True, binwidth=1, x="species",ax=ax[0][0])
+	sns.histplot(data=pivot, stat='probability', color=cumulative_color, element="step", fill=False, cumulative=True, binwidth=1, x="sgbID",ax=ax[0][1])
+	sns.histplot(data=pivot, stat='probability', color=cumulative_color, element="step", fill=False, cumulative=True, binwidth=1, x="MAG_ID",ax=ax[0][2])
+	sns.histplot(data=pivot, stat='probability', color=cumulative_color, element="step", fill=False, cumulative=True, binwidth=1, x="spacerID",ax=ax[0][3])
 
-	sns.histplot(data=pivot, color='#307fb9', stat='probability', binwidth=1, x="species",ax=ax[1][0], alpha=1)
-	sns.histplot(data=pivot, color='#307fb9', stat='probability', binwidth=1, x="sgbID",ax=ax[1][1], alpha=1)
-	sns.histplot(data=pivot, color='#307fb9', stat='probability', binwidth=1, x="MAG_ID",ax=ax[1][2], alpha=1)
-	sns.histplot(data=pivot, color='#307fb9', stat='probability', binwidth=1, x="spacerID",ax=ax[1][3], alpha=1)
+	sns.histplot(data=pivot, color=species_color , edgecolor='k', stat='probability', binwidth=1, x="species",ax=ax[1][0], alpha=1)
+	sns.histplot(data=pivot, color=sgbs_color , edgecolor='k', stat='probability', binwidth=1, x="sgbID",ax=ax[1][1], alpha=1)
+	sns.histplot(data=pivot, color=mags_color ,edgecolor=mags_color, stat='probability', binwidth=1, x="MAG_ID",ax=ax[1][2], alpha=1)
+	sns.histplot(data=pivot, color=spacers_color ,edgecolor=spacers_color, stat='probability', binwidth=1, x="spacerID",ax=ax[1][3], alpha=1)
 
 	ax[1][0].minorticks_on()
 	ax[1][1].minorticks_on()
 	ax[1][2].minorticks_on()
-	ax[1][3].minorticks_on()
+	ax[1][3].minorticks_on()	
+	
 
-	ax[1][0].set(yscale = 'log')
-	ax[1][1].set(yscale = 'log')
-	ax[1][2].set(yscale = 'log')
-	ax[1][3].set(yscale = 'log')
+	sns.histplot(data=pivot, color=species_color, edgecolor='k', stat='probability', binwidth=1, x="species",ax=ax[2][0], alpha=1)
+	sns.histplot(data=pivot, color=sgbs_color, edgecolor='k', stat='probability', binwidth=1, x="sgbID",ax=ax[2][1], alpha=1)
+	sns.histplot(data=pivot, color=mags_color, edgecolor=mags_color, stat='probability', binwidth=1, x="MAG_ID",ax=ax[2][2], alpha=1)
+	sns.histplot(data=pivot, color=spacers_color, edgecolor=spacers_color, stat='probability', binwidth=1, x="spacerID",ax=ax[2][3], alpha=1)
 
-	sns.histplot(data=pivot, color='#831a1a', stat='probability', binwidth=1, x="species",ax=ax[2][0], alpha=1)
-	sns.histplot(data=pivot, color='#831a1a', stat='probability', binwidth=1, x="sgbID",ax=ax[2][1], alpha=1)
-	sns.histplot(data=pivot, color='#831a1a', stat='probability', binwidth=1, x="MAG_ID",ax=ax[2][2], alpha=1)
-	sns.histplot(data=pivot, color='#831a1a', stat='probability', binwidth=1, x="spacerID",ax=ax[2][3], alpha=1)
+
+	ax[2][0].set(yscale = 'log')
+	ax[2][1].set(yscale = 'log')
+	ax[2][2].set(yscale = 'log')
+	ax[2][3].set(yscale = 'log')
 
 	ax[2][0].minorticks_on()
 	ax[2][1].minorticks_on()
@@ -330,14 +374,23 @@ if args.plots:
 
 	ax[2][0].set(xlim=(0,30))
 	ax[2][1].set(xlim=(0,30))
-	ax[2][2].set(xlim=(0,1000))
-	ax[2][3].set(xlim=(0,1000))
+	ax[2][2].set(xlim=(0,200))
+	ax[2][3].set(xlim=(0,200))
 
 	ax[0][0].set(ylabel='Frequency [%]')
 	ax[1][0].set(ylabel='Frequency [%]')
 	ax[2][0].set(ylabel='Frequency [%]')
 
+	for ax in f.axes:
+		#plt.setp(ax.get_yticklabels(), visible=True)
+		ax.yaxis.set_major_formatter(mtick.PercentFormatter(1.0,decimals=1))
+		ax.xaxis.set_tick_params(which='both', labelbottom=True)
+		ax.yaxis.set_tick_params(which='both', labelleft=True)
+
+	sns.despine()
 	plt.savefig(args.outdir +'/' + SIG + '_report.pdf',bbox_inches='tight')
+
+
 
 	plt.clf()
 
