@@ -66,6 +66,7 @@ args = parser.parse_args()
 mg=pd.read_table(args.maginfo,sep='\t')
 maginfo=mg[mg['filtered'] == 'No']
 species2magumber = pd.pivot_table(maginfo,index='species',values='mag_id',aggfunc=len)
+sgbid2magumber = pd.pivot_table(maginfo,index='sgb_id',values='mag_id',aggfunc=len)
 
 if args.groups:
 	mode="GRP"
@@ -143,18 +144,30 @@ def stringify(c):
 
 	return ';'.join([k+' ('+str(v)+')' for (k,v) in c.most_common()  ])
 
+# makes a readable string encompassing the counts of each species found mapping against each M-Group
 def stringify2(c):
 
 	p={}
-	
 	for _ in c:
 		species,magID = _.split('##')
-		#maginfo
 		if species not in p:
 			p[species] = []
 		p[species].append(magID)
 	
 	return ' | '.join(['{} ({}/{})'.format(k,len(set(v)), int(species2magumber.loc[k]) ) for k,v in sorted(p.items(),key=lambda x: len(set(x[1])),reverse=True ) ])
+
+# makes a readable string encompassing the counts of each SGB found mapping against each M-Group
+def stringify_sgb(c):
+
+	p={}
+	for _ in c:
+		sgbID,magID = _.split('##')
+		if sgbID not in p:
+			p[sgbID] = []
+		p[sgbID].append(magID)
+	
+	return ' | '.join(['{} ({}/{})'.format(k,len(set(v)),int(sgbid2magumber.loc[k]) ) for k,v in sorted(p.items(),key=lambda x: len(set(x[1])),reverse=True ) ])
+
 
 def log(m):
 
@@ -174,7 +187,7 @@ def mupdate(d, u):
 
 	return d
 
-
+#worker for parallel pool
 def WFT(groupItem):
 	structure=[]
 	
@@ -303,8 +316,11 @@ elif args.normalize_by_txt:
 
 
 allMs['species_bin'] = allMs['species']+'##'+allMs['MAG_ID']
+allMs['sgbs_bin'] = allMs['sgbID']+'##'+allMs['MAG_ID']
 
-pivot_species=pd.pivot_table(allMs,index='M-Group',values='species_bin',aggfunc=stringify2)
+pivot_species=pd.pivot_table(allMs,index='M-Group',values=['species_bin','sgbs_bin'],aggfunc={'species_bin':stringify2,'sgbs_bin':stringify_sgb})
+pivot_species['species_len'] = pivot_species['species_bin'].apply(lambda x: len(x.split(' | ')))
+pivot_species['sgbs_len'] = pivot_species['sgbs_bin'].apply(lambda x: len(x.split(' | ')))
 pivot_species.to_csv(args.outdir +'/' + SIG + '_report_species.csv',sep='\t')
 ##for k,v in spacers.items():
 ##	print(k,v)
