@@ -47,14 +47,21 @@ avct['M'] = avct.index.map(split_index)
 avct = avct.set_index('M')
 
 overall_abds = []
+VSC_PREVALENCE = pd.read_table(args.vscs_prevalence,header=0,index_col=0)
+VSC_CRISPRS = pd.read_table(args.vscs_crisprs,header=0,index_col=0)
+
+
+VSC_prevalences_dict={}
+
 for target in args.targetV:
 	print("Target:", target)
 
-	VSC_PREVALENCE = pd.read_table(args.vscs_prevalence,header=0,index_col=0)
-	VSC_CRISPRS = pd.read_table(args.vscs_crisprs,header=0,index_col=0)
-
 	MGroup_prevalence = VSC_PREVALENCE.loc[target]['Perc of Samples']
 	MGroup_description = VSC_PREVALENCE.loc[target]['M-Group']
+
+	VSC_prevalences_dict[target] = MGroup_prevalence
+
+	MGroup_type = MGroup_description[0] #this is k or u
 
 	#all the SGB with alignments with this M-Group (SGBID, SGB-String):
 	VSC_SGB_targets = dict( \
@@ -89,7 +96,7 @@ for target in args.targetV:
 
 	for target_sgb,(target_sgb_stats, target_sgb_hits, target_sgb_totalCount) in VSC_SGB_targets.items():
 
-		if target_sgb_hits < 10: continue
+		if target_sgb_hits < 5: continue
 		print("Wk sgb ",target_sgb,(target_sgb_stats, target_sgb_hits, target_sgb_totalCount))
 
 
@@ -105,8 +112,10 @@ for target in args.targetV:
 					sgb_abundance = abd[0]
 					if (float(sgb_abundance) > 0):
 						abdDF.append({'SGB':target_sgb,'sample': sample,'sgb_abundance': sgb_abundance,'phage_present': 'Yes' if sample in tgt_with_m else 'No'})
-						overall_abds.append({'target':target,'SGB':target_sgb,'sample': sample,'sgb_abundance': sgb_abundance,'phage_present': 'Yes' if sample in tgt_with_m else 'No'})
-	abdDataFrame = pd.DataFrame.from_dict(abdDF)
+						overall_abds.append({'target':target,'type':MGroup_type,'SGB':target_sgb,'sample': sample,'sgb_abundance': sgb_abundance,'phage_present': 'Yes' if sample in tgt_with_m else 'No'})
+	
+
+	abdDataFrame = pd.pivot_table(pd.DataFrame.from_dict(abdDF),index=['SGB','sample','phage_present'],values='sgb_abundance',aggfunc=sum).reset_index()
 	print(abdDataFrame)
 
 	if not abdDataFrame.empty:
@@ -159,72 +168,98 @@ for target in args.targetV:
 		ax.set_yticklabels(nlabels,fontsize=10)
 		ax.set_xscale("log")
 		ax.set(xlim=(0.01,100))
-		ax.set_ylabel('SGB')
+		ax.set_ylabel('SGB') 
 		ax.set_xlabel('Rel. abundance [%]')
 
 		sns.despine(ax=ax)
 		plt.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
 		plt.title("M-Group {} | Prevalence = {:.2f}%\n{}".format(target,MGroup_prevalence*100,MGroup_description) )
 
-		plt.savefig('{}_{}_boxplot.png'.format(args.o,target),bbox_inches='tight',dpi=300)
+		plt.savefig('{}_{}_boxplot.svg'.format(args.o,target),bbox_inches='tight',dpi=300)
 		plt.clf()
 
 
-
 overall_abdsPD = pd.DataFrame.from_dict(overall_abds)
-f, axx = plt.subplots(6,6,figsize=(20,20),sharey='row',sharex='col')
+f, axx = plt.subplots(2,1,figsize=(20,10))
 
 
 f1=0
 
-import operator
 orverallStats=[]
-for mGroupName,tgt in overall_abdsPD.groupby('target'):
 
-	print(mGroupName,int(f1/6),int(f1%6))
-	ax = axx[int(f1/6)][int(f1%6)]
-	MGroupDescription=VSC_PREVALENCE.loc[mGroupName]['M-Group']
+passedGroups=[]
+for typer,tgt in overall_abdsPD.groupby('type'):
+
+	print(typer,tgt)
+	#ax = axx[int(f1/6)][int(f1%6)]
+	#MGroupDescription=VSC_PREVALENCE.loc[mGroupName]['M-Group']
 	
 
-	tgt_piv = pd.pivot_table(tgt,index='sample',columns='phage_present',values='sgb_abundance',aggfunc=sum)
+	
+	tgt_piv = pd.pivot_table(tgt,index=['target','sample','phage_present'],values='sgb_abundance',aggfunc=sum).reset_index()
+ 
 	#print(tgt_piv)
+	#tgt_piv2 = tgt.groupby(['target','sample','phage_present'])['sgb_abundance'].sum()
+	#print(tgt_piv2.query("phage_present == 'Yes'"))
+	#print(tgt_piv2.query("phage_present == 'No'"))
 
-	yess= tgt_piv['Yes'].dropna()
-	no= tgt_piv['No'].dropna()
+	#sys.exit(0)
+	#tgt_piv.to_csv('oppa.csv',sep='\t')
+
+	#for stat_tgt,stat_tgt_data in tgt.groupby('target','sample','phage_present'):
+	for stat_tgt in set(tgt_piv['target']):
+
+		print("STA", stat_tgt)
 
 
+		statData = pd.DataFrame(tgt_piv[tgt_piv['target'] == stat_tgt])
+		print(statData)
 
-	orverallStats.append({'M-Group':mGroupName,'Samples_With':len(yess),'Samples_Without':len(no),'Median_With': np.median(yess),'Median_Without': np.median(no),'p-value (t)': stats.ttest_ind(yess,no).pvalue,'p-value (welch)': stats.ttest_ind(yess,no,equal_var=False).pvalue})
+		yess= statData.query("phage_present == 'Yes'")['sgb_abundance'].dropna()
+		no= statData.query("phage_present == 'No'")['sgb_abundance'].dropna()
+
+		print("STA", len(yess),len(no))
+
+		orverallStats.append({'M-Group':stat_tgt,'Samples_With':len(yess),'Samples_Without':len(no),'Median_With': np.median(yess),'Median_Without': np.median(no),'p-value (t)': stats.ttest_ind(yess,no).pvalue,'p-value (welch)': stats.ttest_ind(yess,no,equal_var=False).pvalue, 'p-value (mwu)': stats.mannwhitneyu(yess,no).pvalue})
+		print(orverallStats)
 	
+	ax=axx[f1]
 
-	plot_data=[yess,no]
 
-	sns.boxplot(data=plot_data,palette="Reds" if MGroupDescription.startswith('u') else 'Blues', linewidth=1,fliersize=1.1,ax=ax)
+	targets = set(tgt_piv['target'])
+	print("Targets", targets)
+	odr = sorted(targets, key = lambda x:VSC_prevalences_dict[x], reverse=True)
+	print("Orderded:",odr)
 
+
+	sns.boxplot(x='target',y='sgb_abundance',hue='phage_present',hue_order=['No','Yes'],order=odr,data=tgt_piv,palette="Reds" if typer == 'u' else 'Blues', linewidth=1,fliersize=1.1,ax=ax)
 	
-	ax.set_xticklabels(['Yes','No'])
+	#ax.set_xticklabels(['Yes','No'])
 	ax.set_yscale("log")
+	ax.axhline(3.39245)
+	ax.axhline(11.47173,c='r')
+
 	ax.set(ylim=(0.01,100))
-	ax.set_ylabel('Sum of Rel. abundance [%]', fontsize=10)
-	ax.set_xlabel('Phage Detected', fontsize=10)
+	ax.set_ylabel('Sum of rel. abundances [%]', fontsize=10)
+	ax.set_xlabel('VSC Group', fontsize=10)
 	#ax.minorticks_on()
 	ax.tick_params(axis='y', which='minor', bottom=False)
 	sns.despine()
-	ax.set_title(MGroupDescription, fontsize=10)
+	#ax.set_title('Most prevalent kVSGs' if typer == 'k' else '' , fontsize=10)
 
 	f1+=1
 	
-
 for ax in f.axes:
 	#plt.setp(ax.get_yticklabels(), visible=True)
 	ax.yaxis.set_major_formatter(mtick.PercentFormatter(100,decimals=2))
-	ax.xaxis.set_tick_params(which='both', labelbottom=True)
-	ax.yaxis.set_tick_params(which='both', labelleft=True)
+	#ax.xaxis.set_tick_params(which='both', labelbottom=True)
+	#ax.yaxis.set_tick_params(which='both', labelleft=True)
 
 
 plt.subplots_adjust(left=None, bottom=None, right=None, top=None, wspace=0.5, hspace=0.5)
 
-plt.savefig('{}_boxplot_overall.png'.format(args.o),bbox_inches='tight',dpi=300)
+plt.savefig('{}_boxplot_overall.svg'.format(args.o),bbox_inches='tight')
+
 
 overall_abdsPD.to_csv('overall.csv',sep='\t')
 
