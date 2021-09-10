@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 import argparse
 import re
 import os
@@ -10,7 +12,7 @@ import tempfile
 import pandas as pd
 
 
-parser = argparse.ArgumentParser(help="run minced on input file and output a fasta file with the spacers")
+parser = argparse.ArgumentParser(description="run minced on input file and output a fasta file with the spacers")
 parser.add_argument('file', help="Input Genome (fasta.bz2)")
 parser.add_argument('--annot', help="MetaRefSGB table with SGB IDs and taxonomies")
 parser.add_argument('--out', help='Output FASTA File')
