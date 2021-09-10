@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 import argparse
 import re
 import os
@@ -12,14 +13,14 @@ import numpy as np
 from collections import Counter
 
 parser = argparse.ArgumentParser()
-parser = argparse.ArgumentParser(help="Unify spacers fasata files produced by run_minced_on_sample.py")
+parser = argparse.ArgumentParser(description="Unify spacers fasata files produced by run_minced_on_sample.py")
 parser.add_argument('folder')
 parser.add_argument('out')
-
+parser.add_argument('--idf',help="Starting offset for SpacerIDs (default is 1)",default=1,type=int)
 args = parser.parse_args()
 
 #seq counter
-idf=1
+idf=args.idf
 
 seqs=[]
 manifest=[]
@@ -36,7 +37,15 @@ for fastafile in glob.glob(args.folder+'/*.fna'):
 		# kSGB10068__GCA_000005845__U00096.3
 		if typer == 'metagen':
 
-			sgbID,dataset,sample,bin,contig = seq.id.split('__')
+			# to account for genomes binned by other pipelines
+			# binID can be present or not, depending on the pipeline
+
+			splitSeqID = seq.id.split('__')
+			if len( splitSeqID ) == 5:
+				sgbID,dataset,sample,bin,contig = splitSeqID
+			elif len( splitSeqID ) == 4:
+				sgbID,dataset,sample,contig = splitSeqID
+				bin = sample
 			magID='__'.join([dataset,sample,bin])
 
 			prefix = 'M'

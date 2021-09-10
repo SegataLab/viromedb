@@ -22,7 +22,6 @@ args = parser.parse_args()
 def run_minced(ifile):
 
     with tempfile.TemporaryDirectory() as tmpdirname:
-
         subprocess.run(['bzip2','-dkc', ifile], stdout=open(tmpdirname+'/ofa.fna','w'), stderr=subprocess.DEVNULL)
         subprocess.run(['minced',  tmpdirname+'/ofa.fna', tmpdirname+'/out.minced'], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
@@ -49,7 +48,7 @@ def run_minced(ifile):
         return spacers
 
 TDP=[]
-maginfo=pd.read_table(args.annot,sep='\t',skiprows=1)
+maginfo=pd.read_table(args.annot,sep='\t')
 fn=os.path.basename(args.file).replace('.fa.bz2','').replace('.fna.bz2','')
 
 # Assign Species basing on mags info
@@ -70,7 +69,7 @@ else:
 # Assemble FASTA output with species in description
 for node,spacers in run_minced(args.file).items():
     for spacer in spacers:
-        TDP.append(SeqRecord(Seq(spacer),id=SGBID+'__'+fn+'__'+node, description='s:'+speciesSel))
+        TDP.append(SeqRecord(Seq(spacer),id=SGBID+'__'+fn+'__'+node, description='s:'+speciesSel.replace(' ','_')))
 
 # If seqs are there, output a FASTA file
 if len(TDP) > 0:
