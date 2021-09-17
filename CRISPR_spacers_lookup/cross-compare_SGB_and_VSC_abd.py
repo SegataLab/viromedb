@@ -62,7 +62,7 @@ VSC_SGB_targets = {}
 for target in args.targetV:
 	print("Target:", target)
 
-	MGroup_prevalence = VSC_PREVALENCE.loc[target]['Perc of Samples']
+	MGroup_prevalence = VSC_PREVALENCE.loc[target]['Avg. prevalence in datasets']
 	MGroup_description = VSC_PREVALENCE.loc[target]['M-Group']
 
 	VSC_prevalences_dict[target] = MGroup_prevalence
@@ -97,6 +97,8 @@ for target in args.targetV:
 
 
 	TOTAL_SMPLS = len(samples_to_compare_with_SGB)
+
+	#track samples with any SGB and classifies them by "VSC detected" and "VSC non detected"
 	SGB_prevalences_dict = {'with_virus':{},'no_virus':{}}
 
 	
@@ -114,7 +116,7 @@ for target in args.targetV:
 		print("Wk sgb ",target_sgb,(target_sgb_stats, target_sgb_hits, target_sgb_totalCount))
 
 
-		sgb_mpdata = mpdata[mpdata['clade_name'].str.contains(target_sgb)].set_index('clade_name')
+		sgb_mpdata = mpdata[mpdata['clade_name'].str.contains(target_sgb)].fillna(0).set_index('clade_name')
 		sgb_mpdata_dict = sgb_mpdata.to_dict(orient='list')
 
 
@@ -122,29 +124,26 @@ for target in args.targetV:
 			sample=smpl.replace('_profile','')
 
 			if sample in samples_to_compare_with_SGB:
-				if len(abd):
-					sgb_abundance = abd[0]
-					if (float(sgb_abundance) > 0):
 
-						if sample in tgt_with_m:
-							SGB_prevalences_dict['with_virus'][sample] = 1
-						elif sample not in tgt_with_m:
-							SGB_prevalences_dict['no_virus'][sample] = 1
+				if len(abd) and float(abd[0]) > 0:
+					sgb_abundance = float(abd[0])
+					
+					if sample in tgt_with_m:
+						SGB_prevalences_dict['with_virus'][sample] = 1
+					elif sample not in tgt_with_m:
+						SGB_prevalences_dict['no_virus'][sample] = 1
 
-
-						abdDF.append({'SGB':target_sgb,'sample': sample,'sgb_abundance': sgb_abundance,'phage_present': 'Yes' if sample in tgt_with_m else 'No'})
-						overall_abds.append({'target':target,'type':MGroup_type,'SGB':target_sgb,'sample': sample,'sgb_abundance': sgb_abundance,'phage_present': 'Yes' if sample in tgt_with_m else 'No'})
+					abdDF.append({'SGB':target_sgb,'sample': sample,'sgb_abundance': sgb_abundance,'phage_present': 'Yes' if sample in tgt_with_m else 'No'})
+					overall_abds.append({'target':target,'type':MGroup_type,'SGB':target_sgb,'sample': sample,'sgb_abundance': sgb_abundance,'phage_present': 'Yes' if sample in tgt_with_m else 'No'})
 	
-
 	prevalenceDataFrameDict.append({'target':target, \
-		'prevalence': len(SGB_prevalences_dict['with_virus']) / TOTAL_SMPLS *100, \
+		'prevalence': len(SGB_prevalences_dict['with_virus']) / TOTAL_SMPLS * 100, \
 		'phage_present': 'Yes' \
 		})
 	prevalenceDataFrameDict.append({'target':target, \
-		'prevalence': len(SGB_prevalences_dict['no_virus']) / TOTAL_SMPLS *100, \
+		'prevalence': len(SGB_prevalences_dict['no_virus']) / TOTAL_SMPLS * 100, \
 		'phage_present': 'No' \
 		})
-
 
 	abdDataFramePrev = pd.DataFrame.from_dict(abdDF)
 
@@ -166,8 +165,6 @@ for target in args.targetV:
 		astatsPD = pd.DataFrame.from_dict(astats).set_index('target_sgb')
 		astatsPD.to_csv('{}_{}_stats.txt'.format(args.o,target),sep='\t')
 			
-
-
 		abdDataFrame.to_csv('{}_{}_data.tsv'.format(args.o,target),sep='\t')
 
 		f, ax = plt.subplots(figsize=(4,12))
